@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Archivo, IBM_Plex_Mono, Newsreader } from "next/font/google";
+import { SiteNav } from "@/components/site-nav";
 import "./globals.css";
 
 const display = Newsreader({
@@ -25,7 +26,10 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://obiter.vercel.app"),
-  title: "Obiter, a case reporter for the month-end close",
+  title: {
+    default: "Obiter, a case reporter for the month-end close",
+    template: "%s | Obiter",
+  },
   description:
     "The controller resolves one reconciliation exception. Obiter compiles that decision into a named rule and closes every matching exception in the queue, with the precedent stamped on each record and one click to revert.",
   openGraph: {
@@ -53,17 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               />
               <span className="font-display text-lg tracking-tight">Obiter</span>
             </Link>
-            <nav className="flex items-center gap-5 text-sm">
-              <Link href="/close" className="underline-offset-4 hover:underline">
-                Close queue
-              </Link>
-              <a
-                href="https://github.com/"
-                className="text-muted-foreground underline-offset-4 hover:underline"
-              >
-                Source
-              </a>
-            </nav>
+            <SiteNav />
           </div>
         </header>
 

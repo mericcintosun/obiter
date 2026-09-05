@@ -25,6 +25,11 @@ import {
   precedentScopeLabels,
   scopeValueFor,
 } from "@/lib/precedent";
+import type {
+  ApiError,
+  CompilePrecedentResponse,
+  SettlementResponse,
+} from "@/lib/types";
 
 interface Props {
   initialQueue: ReconException[];
@@ -35,14 +40,6 @@ interface Props {
 type RowStatus =
   | { state: "open" }
   | { state: "closed"; precedentId: string; byHuman: boolean };
-
-interface Proposal {
-  rule: PrecedentRule;
-  source: string;
-  wouldClose: string[];
-  elapsedMs: number;
-  rejectedModelOutput: string | null;
-}
 
 const actionChoices: Record<ReconException["kind"], PrecedentAction[]> = {
   short_payment: ["close_as_rounding", "close_as_fx_variance", "hold_for_review"],
@@ -76,6 +73,7 @@ function openStatuses(queue: ReconException[]): Record<string, RowStatus> {
 const sourceLabels: Record<string, string> = {
   anthropic: "Claude via the Anthropic API",
   "claude-cli": "your local claude CLI",
+  fixture: "the checked-in fixture compiler",
   deterministic: "the offline deterministic compiler",
 };
 
@@ -90,7 +88,7 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
   const [scopeLevel, setScopeLevel] = useState<PrecedentScopeLevel>("counterparty_group");
   const [tolerance, setTolerance] = useState("2");
   const [rationale, setRationale] = useState("");
-  const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [proposal, setProposal] = useState<CompilePrecedentResponse | null>(null);
   const [phase, setPhase] = useState<"idle" | "compiling" | "proposed" | "pulling">("idle");
   const [error, setError] = useState<string | null>(null);
   const [inspecting, setInspecting] = useState<string | null>(null);
@@ -165,9 +163,9 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
           existingPrecedentIds: [...carried.map((c) => c.id), ...precedents.map((p) => p.id)],
         }),
       });
-      const payload = await response.json();
+      const payload = (await response.json()) as CompilePrecedentResponse & Partial<ApiError>;
       if (!response.ok) throw new Error(payload.error ?? "The compiler did not answer.");
-      setProposal(payload as Proposal);
+      setProposal(payload);
       setPhase("proposed");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The compiler did not answer.");
@@ -223,11 +221,11 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
 
     try {
       const response = await fetch(`/api/settlements?seq=${sequence}&id=${exceptionId}`);
-      const payload = await response.json();
+      const payload = (await response.json()) as SettlementResponse & Partial<ApiError>;
       if (!response.ok) throw new Error(payload.error ?? "The settlement feed did not answer.");
 
       settlementSeq.current = sequence + 1;
-      const incoming = payload.exception as ReconException;
+      const incoming = payload.exception;
       const nextQueue = [...openQueue, incoming];
       const hit = precedents.find((rule) => matchesPrecedent(rule, incoming, nextQueue));
 
@@ -409,19 +407,24 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
                   onClick={() => selectException(exception)}
                   className="h-auto min-w-0 flex-1 justify-start whitespace-normal rounded-none px-2 py-3 text-left"
                 >
+                  {/* Under sm the counterparty and the pattern take the full
+                      width and the row wraps to three lines: id and amount
+                      together, then the name, then the pattern. The fixed
+                      column widths only apply from sm up, so a 375px viewport
+                      never pushes the body sideways. */}
                   <span className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span className="obiter-figure w-[5.5rem] shrink-0 text-muted-foreground">
+                    <span className="obiter-figure order-1 w-[5.5rem] shrink-0 text-muted-foreground">
                       {exception.id}
                     </span>
-                    <span className="min-w-[13rem] flex-1 font-medium">
+                    <span className="order-3 w-full font-medium sm:order-2 sm:w-auto sm:min-w-[13rem] sm:flex-1">
                       {exception.counterparty}
                     </span>
-                    <span className="w-[9.5rem] shrink-0 text-sm text-muted-foreground">
+                    <span className="order-4 w-full text-sm text-muted-foreground sm:order-3 sm:w-[9.5rem] sm:shrink-0">
                       {exceptionKindLabels[exception.kind]}
                     </span>
                     <span
                       className={cn(
-                        "obiter-figure w-[7rem] shrink-0 text-right",
+                        "obiter-figure order-2 ml-auto w-[7rem] shrink-0 text-right sm:order-4 sm:ml-0",
                         isClosed ? "text-second" : "text-warn"
                       )}
                     >
