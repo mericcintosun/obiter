@@ -1,0 +1,14 @@
+{
+  "name": "Exact match settling up to 4 days after cutoff",
+  "kind": "late_settlement",
+  "conditions": {
+    "maxAbsDelta": 0.02,
+    "maxDeltaPct": 0.01,
+    "maxDaysApart": 4,
+    "currencies": ["USD"],
+    "requireBatchSumMatch": false
+  },
+  "scope": { "level": "all_counterparties", "value": "All counterparties" },
+  "action": "close_as_timing",
+  "rationale": "The amount agrees to the cent and only the settlement date crosses the period cutoff, which is a timing difference rather than a dispute. Amounts must be exact, so a late settlement that is also short still reaches a human."
+}

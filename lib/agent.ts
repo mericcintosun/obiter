@@ -25,7 +25,10 @@ import {
 } from "@/lib/precedent";
 import { exceptionKindLabels, formatMoney, shortfall, shortfallPct } from "@/lib/data";
 
-export type CompilerSource = "anthropic" | "claude-cli" | "deterministic";
+// "fixture" is produced by lib/fake-compiler.ts, which replays a recorded
+// emit_precedent answer through the same adoptModelRule validation this file
+// applies to a live one. It is a compiler in the chain, not a bypass around it.
+export type CompilerSource = "anthropic" | "claude-cli" | "fixture" | "deterministic";
 
 export interface CompileResult {
   rule: PrecedentRule;

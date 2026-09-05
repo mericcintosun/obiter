@@ -1,0 +1,14 @@
+{
+  "name": "Batch remittance split for Kestrel Media Ltd",
+  "kind": "batched_remittance",
+  "conditions": {
+    "maxAbsDelta": 250000,
+    "maxDeltaPct": 100,
+    "maxDaysApart": 5,
+    "currencies": ["USD"],
+    "requireBatchSumMatch": true
+  },
+  "scope": { "level": "counterparty", "value": "Kestrel Media Ltd" },
+  "action": "split_match",
+  "rationale": "Kestrel settles a month of invoices with one transfer and the open invoices sharing that transfer sum to it exactly. The split is allowed only when that sum is exact to the cent, never against a residual."
+}

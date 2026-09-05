@@ -1,0 +1,14 @@
+{
+  "name": "Rounding shortfall up to $2.00, Northwind Group",
+  "kind": "short_payment",
+  "conditions": {
+    "maxAbsDelta": 2,
+    "maxDeltaPct": 0.5,
+    "maxDaysApart": 2,
+    "currencies": ["USD"],
+    "requireBatchSumMatch": false
+  },
+  "scope": { "level": "counterparty_group", "value": "Northwind Group" },
+  "action": "close_as_rounding",
+  "rationale": "This group converts EUR at their own bank and lands a euro or two short of the invoice. Seen 3 times in the last 6 closes on this group and never disputed."
+}
