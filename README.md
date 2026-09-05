@@ -8,6 +8,8 @@
 
 Built for **Syndicate by Maximor**, Track 2, Autonomous Office of the CFO.
 
+`ADAPTER_MODE` decides which compiler runs behind `lib/adapters.ts`. It defaults to `fake`, which compiles the precedent from the checked-in answers in `fixtures/precedent/` with no API key and no network, so the whole demo path is clickable on a laptop with no accounts. Set `ADAPTER_MODE=real` to run the live Claude chain in `lib/agent.ts` instead. Both modes hand their answer to the same Zod validation in `lib/precedent.ts`, so the offline path exercises the guard rail rather than skipping it.
+
 ## The problem
 
 At month-end close, the easy 90 percent of reconciliation matches itself. The pain is in the residue: underpayments, currency moves between the invoice date and the settlement date, one bank transfer covering three invoices, money that lands two days after the cutoff, a fee charged twice, a payment referencing a purchase order instead of an invoice.
@@ -78,13 +80,15 @@ Clearing all six patterns takes it to 56 of 62, which is 90 percent, on six huma
 
 ### The compiler fallback chain
 
-`compilePrecedent` in `lib/agent.ts` tries three paths in order:
+With `ADAPTER_MODE=real`, `compilePrecedent` in `lib/agent.ts` tries three paths in order:
 
 1. Claude via the Anthropic API, when `ANTHROPIC_API_KEY` is set. **This is the path the recorded demo must run on.**
 2. Your local `claude` CLI, detected once with `claude --version` and invoked with `claude -p --output-format text --model haiku`. This exists so a developer gets the real agent loop with zero keys and zero cost.
 3. The deterministic draft in `lib/precedent.ts`, built from the controller's own inputs.
 
-All three go through the same Zod schema. Output that fails it is discarded and the chain moves on, which is why a bad generation cannot reach the queue.
+With `ADAPTER_MODE` unset or `fake`, `lib/fake-compiler.ts` runs instead: it replays a recorded `emit_precedent` answer from `fixtures/precedent/`, and falls to the same deterministic draft when no fixture covers the record on the desk.
+
+Every one of those paths goes through the same Zod schema and the same `adoptModelRule` guard. Output that fails it is discarded and the caller moves on, which is why a bad generation, and equally a stale fixture, cannot reach the queue. The prompt the real path sends is written out in `prompts/precedent-compiler.md`.
 
 ## Tech stack
 
@@ -97,17 +101,22 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 and click through to the close queue. Nothing else is required: with no environment variables the compiler falls back to your local `claude` CLI, and then to the deterministic path, and the settlement feed serves fixtures.
+Open http://localhost:3000 and click through to the close queue. Nothing else is required: `ADAPTER_MODE` is `fake` unless you say otherwise, so the compiler replays `fixtures/precedent/` and the settlement feed serves the three fixtures in `lib/dodo.ts`. No key, no network, no local `claude` binary.
 
 To run the real model path:
 
 ```bash
 cp .env.example .env.local
-# fill in ANTHROPIC_API_KEY, and DODO_PAYMENTS_API_KEY for the live feed
+# set ADAPTER_MODE=real and fill in ANTHROPIC_API_KEY
+# add DODO_PAYMENTS_API_KEY for the live settlement feed
 npm run dev
 ```
 
-`npm run seed` is a placeholder. The close data ships in `lib/data.ts` and needs no database.
+```bash
+npm run seed
+```
+
+`npm run seed` reads the close out of `lib/data.ts` and writes `fixtures/close-august-2026.json`: the summary, the two carried precedents, and all 24 open exceptions, keys in a fixed order. It carries no timestamps and no random values, so two runs on a clean checkout produce a byte-identical file and any diff on it is a real change to the seed. It then prints the counts it wrote (exceptions, distinct patterns, carried precedents, autonomy percent) so you can check them against the close screen. There is still no database; Phase 2 turns this into an idempotent insert.
 
 ### Try the loop in 60 seconds
 
