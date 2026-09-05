@@ -6,3 +6,9 @@ out/
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+# farm: sır dosyaları (otomatik eklendi)
+*.pem
+*.key
+id_rsa
+!.env.example
