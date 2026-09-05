@@ -2,7 +2,7 @@
 
 **The controller resolves one reconciliation exception. Obiter compiles that decision into a named rule and closes every matching exception in the queue, with the precedent stamped on each record and one click to take it all back.**
 
-> Live demo: https://obiter.vercel.app
+> Live demo: https://obiter-app.vercel.app
 >
 > Video: `<ADD_VIDEO_URL>`
 
