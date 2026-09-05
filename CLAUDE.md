@@ -9,10 +9,15 @@ Permanent working notes for any agent session opened at this repo root. Read
 npm install     # install dependencies
 npm run dev     # local server on http://localhost:3000
 npm run build   # production build, must pass with zero TypeScript errors
+npm test        # vitest, run once. Pins the seven id PREC-03 preview.
 npm run seed    # writes fixtures/close-august-2026.json from lib/data.ts
+npm run db:push # applies drizzle/0000_init.sql to DATABASE_URL
+npm run db:seed # clears the journal for OBITER_CLOSE_ID, back to the baseline
 ```
 
-There is no test runner in this repo. `npm run build` is the gate.
+`npm run build` and `npm test` are the two gates. Neither database script is
+needed to run the app: without `DATABASE_URL` the close journal lives in the
+in-process store in `lib/store.ts`.
 
 ## Stack pitfalls
 
@@ -45,9 +50,14 @@ Later phases inherit these. Breaking one is a deploy failure, not a lint warning
    so any route reaching it declares `export const runtime = "nodejs"`.
 4. **No custom server and no `output: export`.** The app is deployed as a normal
    Next.js App Router project.
-5. **Every `process.env.X` is mirrored in `.env.example`.** Currently
-   `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `DODO_PAYMENTS_API_KEY`,
-   `DODO_PAYMENTS_API_BASE`, `ADAPTER_MODE`. Never commit a real key.
+5. **`lib/config.ts` is the only file under `lib/`, `app/` or `components/` that
+   reads `process.env`, and every key it reads is mirrored in `.env.example`.**
+   Currently `ADAPTER_MODE`, `DATABASE_URL`, `OBITER_CLOSE_ID`,
+   `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `ANTHROPIC_URL`,
+   `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_API_BASE`. Scripts under
+   `scripts/*.mjs` read the environment directly, because they run under plain
+   node and never ship to a browser. Never commit a real key, and never give one
+   a `NEXT_PUBLIC_` prefix.
 
 ## Architecture, in one paragraph
 
@@ -56,9 +66,21 @@ rule schema, the JSON Schema handed to the model, and the deterministic executor
 (`matchesPrecedent`, `previewPrecedent`, `draftPrecedent`, `adoptModelRule`); do
 not refactor the executor. `lib/adapters.ts` is the seam every page and route
 goes through, switched by `ADAPTER_MODE` (`fake` by default, `real` for the live
-Claude chain). `lib/fake-compiler.ts` replays the checked-in fixtures in
-`fixtures/precedent/` through the same `adoptModelRule` validation a live model
-answer gets. `lib/agent.ts` is the only place a model runs.
+Claude chain and Postgres). `lib/fake-compiler.ts` replays the checked-in
+fixtures in `fixtures/precedent/` through the same `adoptModelRule` validation a
+live model answer gets. `lib/agent.ts` is the only place a model runs.
+`lib/store.ts` is the close ledger: one `CloseStore` interface, an in-process
+`memoryStore` (the default) and a `postgresStore` over `lib/db/*`, and
+`getCloseState()` composes the seed with whichever one answers. `lib/config.ts`
+holds every environment read and every named constant; `lib/errors.ts` holds the
+`ErrorCode` union and the `{ error, hint }` failure body every handler returns;
+`lib/schemas.ts` holds the zod schemas each route parses with before it does
+anything else.
+
+**Server-only files.** `lib/store.ts`, `lib/db/client.ts`, `lib/db/schema.ts`,
+`lib/agent.ts` and `lib/config.ts` are never imported by a page or a
+`"use client"` file. Every consumer reaches them through `lib/adapters.ts` or an
+API route.
 
 ## Folders never to touch
 
