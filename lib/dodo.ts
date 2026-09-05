@@ -10,8 +10,12 @@
 // changes; nothing else in the app knows where a settlement came from.
 
 import type { ReconException } from "@/lib/data";
-
-const DODO_API_BASE = process.env.DODO_PAYMENTS_API_BASE ?? "https://test.dodopayments.com";
+import {
+  DODO_API_BASE,
+  DODO_API_KEY,
+  UPSTREAM_RETRIES,
+  UPSTREAM_TIMEOUT_MS,
+} from "@/lib/config";
 
 export interface IncomingSettlement {
   paymentId: string;
@@ -94,16 +98,40 @@ function mapDodoPayments(payments: DodoPayment[]): IncomingSettlement[] {
 }
 
 /**
+ * The same bound the compiler call gets: a hard timeout per attempt and exactly
+ * one retry, in a counted loop that cannot run more than twice. A settlement
+ * feed that hangs must not hold the close screen open, and the caller already
+ * falls to the fixtures when this throws.
+ */
+async function fetchOnce(url: string, init: RequestInit): Promise<Response> {
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= UPSTREAM_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      });
+      if (response.status >= 500 && attempt < UPSTREAM_RETRIES) continue;
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt < UPSTREAM_RETRIES) continue;
+    }
+  }
+
+  throw lastError ?? new Error("the settlement feed did not answer");
+}
+
+/**
  * One settlement, newest first. `sequence` only matters for the fixture path:
  * it walks the list so repeated calls during a demo return different money.
  */
 export async function fetchLatestSettlement(sequence = 0): Promise<IncomingSettlement> {
-  const apiKey = process.env.DODO_PAYMENTS_API_KEY;
-
-  if (apiKey) {
+  if (DODO_API_KEY) {
     try {
-      const response = await fetch(`${DODO_API_BASE}/payments?page_size=1&status=succeeded`, {
-        headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+      const response = await fetchOnce(`${DODO_API_BASE}/payments?page_size=1&status=succeeded`, {
+        headers: { Authorization: `Bearer ${DODO_API_KEY}`, "content-type": "application/json" },
         cache: "no-store",
       });
       if (response.ok) {

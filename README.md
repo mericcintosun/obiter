@@ -92,7 +92,7 @@ Every one of those paths goes through the same Zod schema and the same `adoptMod
 
 ## Tech stack
 
-Next.js 15 App Router, TypeScript in strict mode, Tailwind CSS v4, shadcn primitives, Zod for rule validation, Claude for the one compilation step, Dodo Payments test mode for the settlement feed, deployed on Vercel.
+Next.js 15 App Router, TypeScript in strict mode, Tailwind CSS v4, shadcn primitives, Zod for rule validation and at every route edge, Drizzle over Postgres on Neon for the close ledger, Claude for the one compilation step, Dodo Payments test mode for the settlement feed, Vitest for the pinned demo test, deployed on Vercel.
 
 ## Quickstart
 
@@ -108,15 +108,25 @@ To run the real model path:
 ```bash
 cp .env.example .env.local
 # set ADAPTER_MODE=real and fill in ANTHROPIC_API_KEY
+# add DATABASE_URL for a close that survives a reload, then npm run db:push
 # add DODO_PAYMENTS_API_KEY for the live settlement feed
 npm run dev
 ```
 
 ```bash
-npm run seed
+npm test          # vitest, run once
+npm run seed      # writes fixtures/close-august-2026.json from lib/data.ts
+npm run db:push   # applies drizzle/0000_init.sql to DATABASE_URL
+npm run db:seed   # clears the journal for OBITER_CLOSE_ID, back to the baseline
 ```
 
-`npm run seed` reads the close out of `lib/data.ts` and writes `fixtures/close-august-2026.json`: the summary, the two carried precedents, and all 24 open exceptions, keys in a fixed order. It carries no timestamps and no random values, so two runs on a clean checkout produce a byte-identical file and any diff on it is a real change to the seed. It then prints the counts it wrote (exceptions, distinct patterns, carried precedents, autonomy percent) so you can check them against the close screen. There is still no database; Phase 2 turns this into an idempotent insert.
+**Persistence needs three things and none of them are required to run the app.** Put a Neon pooled connection string in `.env.local` as `DATABASE_URL`, with `?sslmode=require` on the end; run `npm run db:push` once to create the three tables in `drizzle/0000_init.sql`; run `npm run db:seed` whenever you want the close back at its August 2026 baseline.
+
+With no `DATABASE_URL`, the close journal lives in the in-process store in `lib/store.ts`. That survives navigation and reloads inside one running server and resets when the process does, which is enough for a local walkthrough and not enough for a deployed one.
+
+`npm test` runs the two suites in `tests/`. The one that matters is the demo invariant: PREC-03, compiled from EXC-0142 at a $2.00 tolerance, closes exactly `EXC-0142, EXC-0144, EXC-0149, EXC-0151, EXC-0158, EXC-0163, EXC-0166`, pinned by id. If that fails, the recording is wrong.
+
+`npm run seed` reads the close out of `lib/data.ts` and writes `fixtures/close-august-2026.json`: the summary, the two carried precedents, and all 24 open exceptions, keys in a fixed order. It carries no timestamps and no random values, so two runs on a clean checkout produce a byte-identical file and any diff on it is a real change to the seed. It then prints the counts it wrote (exceptions, distinct patterns, carried precedents, autonomy percent) so you can check them against the close screen. The seed is never written into the database: `lib/data.ts` is the baseline every close starts from, and the tables hold only what the controller did on top of it.
 
 ### Try the loop in 60 seconds
 
@@ -127,10 +137,10 @@ npm run seed
 5. Seven rows close, each stamped PREC-03. Autonomy moves.
 6. Click any PREC-03 stamp, then **Revert this precedent**. All seven return to the queue.
 7. Press **Pull latest settlement**. New money arrives, matches PREC-03, and closes with no human involved.
+8. Refresh the browser. With a `DATABASE_URL` set, the seven rows are still closed, the seal is still stamped on each, the meter still reads 71 percent, and the settlement is still there.
 
 ## What we would build next
 
-- Persist precedents in Postgres with Drizzle so they actually carry into next month instead of living in the session. The executor and the schema are already the storage contract.
 - Signed Dodo webhooks with `standardwebhooks` so settlements push instead of being pulled.
 - A precedent conflict check: warn when a new rule overlaps an existing one, and show which one wins.
 - Per-precedent hit rate over time, so a rule that starts closing things it should not is visible before an auditor finds it.

@@ -94,11 +94,20 @@ This repo is a working scaffold, not an empty template. `npm install && npm run 
 | `app/api/precedent/route.ts` | POST. Compiles a decision into a rule and returns the rule plus the exact ids it would close. |
 | `app/api/settlements/route.ts` | GET. Pulls one settlement and returns it as an exception. |
 | `components/ui/*` | shadcn primitives. `badge.tsx` gained `seal`, `closed`, and `pending` variants and square corners. |
+| `lib/config.ts` | The only file under `lib/`, `app/` or `components/` that reads `process.env`, plus every named constant on the core path. |
+| `lib/errors.ts` | The `ErrorCode` union and the `{ error, hint }` body every handler answers a failure with. |
+| `lib/schemas.ts` | The zod schemas every route parses its input with before it does anything else. |
+| `lib/store.ts` | The close ledger. One `CloseStore` interface, `memoryStore` (the default) and `postgresStore`, picked by `closeStore()`. |
+| `lib/db/schema.ts`, `lib/db/client.ts` | The three drizzle tables and the lazily created Neon connection. Server only. |
+| `lib/cache.ts` | In-process cache of compile results, so two takes of the demo render identically. |
+| `drizzle/0000_init.sql` | The three tables as plain SQL. `npm run db:push` applies it; `lib/db/schema.ts` mirrors it by hand. |
+| `app/api/close/journal/route.ts` | POST. The one write endpoint for the close ledger. Never appears on camera. |
+| `tests/*` | Vitest. `precedent.test.ts` pins the seven id PREC-03 preview; `schemas.test.ts` pins the edge rejections. |
 
 **Real vs mocked**
 
-- Real: the matching executor, the rule schema and its validation, retroactive application, provenance stamping, revert, the autonomy arithmetic (computed from the seed at render time, nothing hardcoded), and the Anthropic API call in `compileWithAnthropic`.
-- Mocked or fallback: as of Phase 1 the compiler is chosen by `ADAPTER_MODE`, which defaults to `fake` and replays `fixtures/precedent/` through `lib/fake-compiler.ts`. `ADAPTER_MODE=real` runs the live chain in `lib/agent.ts` (Anthropic API, then the local `claude` CLI, then `draftPrecedent`). `fetchLatestSettlement` in `lib/dodo.ts` returns fixtures when no Dodo key is set, and the fixture list is what the demo currently runs on. There is no database: precedents live in React state and disappear on reload. That is the single biggest gap.
+- Real: the matching executor, the rule schema and its validation, retroactive application, provenance stamping, revert, the autonomy arithmetic (computed from the seed at render time, nothing hardcoded), the Anthropic API call in `compileWithAnthropic`, and, as of Phase 2, the close journal in Postgres behind `getCloseState()`.
+- Mocked or fallback: as of Phase 1 the compiler is chosen by `ADAPTER_MODE`, which defaults to `fake` and replays `fixtures/precedent/` through `lib/fake-compiler.ts`. `ADAPTER_MODE=real` runs the live chain in `lib/agent.ts` (Anthropic API, then the local `claude` CLI, then `draftPrecedent`). `fetchLatestSettlement` in `lib/dodo.ts` returns fixtures when no Dodo key is set, and the fixture list is what the demo currently runs on. Phase 2 closed the database gap: precedents, closures and pulled settlements are written to Neon under `ADAPTER_MODE=real` and to an in-process journal otherwise, so a reload no longer wipes the close. None of it has been run against a real database yet.
 
 ---
 
@@ -258,3 +267,166 @@ returns `CloseState`, `app/close/page.tsx` awaits it and knows nothing else, and
 `scripts/seed.mjs` already produces the deterministic snapshot the tables should
 be loaded from. Record the first Vercel URL in this section when it lands; the
 deploy step rewrites README's `> Live demo:` line but does not touch this file.
+
+---
+
+### Phase 2, 6 September 2026: precedents that survive a reload
+
+**Goal.** Put durable close state behind `getCloseState()` so DEMO.md steps 4, 5
+and 6 survive a browser refresh, and put a boundary around everything the app
+talks to: one env door, one error vocabulary, a zod parse at every route edge, a
+bounded compiler call, and a test that pins the demo's seven ids.
+
+**Status.** All five slices done. Nothing was cut. **Not verified by me: nothing
+in this phase was executed, because the session had file tools only.**
+`npm install`, `npm run build`, `npm test`, `npm run db:push`, `npm run db:seed`
+and the browser are all unrun. Read every claim below as "written", not "proven".
+
+**What went real.** The close journal. `lib/store.ts` is one `CloseStore`
+interface with two implementations: `memoryStore`, a module scope journal that is
+the default and survives navigation inside one server process, and
+`postgresStore`, drizzle over three tables in Neon scoped by `CLOSE_ID`.
+`getCloseState()` composes the August 2026 seed with whichever one answers and
+never throws: a failed read logs once and returns the seed with an empty journal.
+`components/close-queue.tsx` hydrates from that journal on mount and writes back
+to `app/api/close/journal/route.ts` after apply, revert, settlement and reset.
+
+**What still returns fixtures.**
+
+- `fetchLatestSettlement` in `lib/dodo.ts` serves the three local settlements
+  whenever `DODO_PAYMENTS_API_KEY` is empty. The demo currently runs on those.
+- The three files under `fixtures/precedent/` are the compiler in fake mode.
+  `short_payment.json` is the PREC-03 of the demo, `batched_remittance.json`
+  covers Kestrel, and `late_settlement.json` is deliberately rejected by the new
+  tolerance bound, which is the guard rail proving itself.
+- `lib/data.ts` is still the only source of the 24 open exceptions, the 62
+  raised, the 38 carried closures and the six patterns. The database holds the
+  journal on top of the seed, never the seed itself.
+
+**Env keys the runner must fill.** `DATABASE_URL` (Neon, pooled connection
+string, `?sslmode=require`), `OBITER_CLOSE_ID` (any label, defaults to
+`halden-2026-08`), `ADAPTER_MODE=real`, `ANTHROPIC_API_KEY`. Optional:
+`DODO_PAYMENTS_API_KEY` for a live settlement feed. All eight keys the app reads
+are listed in `.env.example` with a one line comment naming the source.
+
+**Decisions.**
+
+1. **`memoryStore` is the default, not a null object.** In fake mode the journal
+   lives in module scope, so a laptop with no database still keeps a precedent
+   across a navigation inside one `npm run dev` process. It resets when the
+   process does, and README says so plainly. The alternative, making fake mode
+   stateless, would have meant the persistence work was invisible without a Neon
+   account, and the demo has to be clickable with no accounts.
+2. **`postgresStore` runs only under `ADAPTER_MODE=real`.** `closeStore()` picks
+   on the mode first and on the client second, so a stray `DATABASE_URL` in a
+   developer's shell cannot silently change what the fake path does.
+3. **The seed is never written to the database.** `npm run db:seed` clears the
+   journal rather than inserting 24 rows. `lib/data.ts` is the baseline every
+   close starts from, so "reset the close" is a delete, which is idempotent by
+   construction and cannot drift from the file the tests read.
+4. **A reverted precedent is marked, not deleted.** `status` goes to
+   `'reverted'` and its closures are removed. An auditor should be able to see
+   that a rule was written and taken back; `readJournal` filters on
+   `status = 'active'` so the screen does not.
+5. **The client writes after it renders, and never waits.** `persist` is fire and
+   forget. The controller's click is the decision and the screen has already
+   acted on it; if the ledger refuses, the audit trail gains one sentence saying
+   the screen is ahead of the record. Blocking the queue on a database round trip
+   would have put a spinner into the wow moment.
+6. **The apply entry carries `source` and `elapsedMs`.** The brief named three
+   fields for the apply op. Two more are optional in `journalRequestSchema`,
+   because the `precedents` table records which compiler wrote each rule and how
+   long it took, and inventing `"unknown"` for a value the client already has
+   would have made the audit column a lie.
+7. **`lib/types.ts` holds the journal and request types, `lib/store.ts`
+   re-exports them.** The client needs `ClosureRow` and `JournalRequest`, and
+   `lib/types.ts` is the one file that is safe for a `"use client"` component to
+   import: every import in it is `import type`, so it erases and no database
+   driver reaches a browser bundle.
+8. **`app/close/page.tsx` and `app/page.tsx` are `force-dynamic`.** Both now read
+   the journal. Without it the close would be captured at build time and a reload
+   would show whatever the build machine saw.
+9. **The compile cache is keyed on everything except `compiledAt`.** That is the
+   only field that moves between two identical decisions, and pinning it is the
+   point: two takes of the demo render the same rule, the same rationale and the
+   same elapsed milliseconds.
+10. **The tolerance bound is `<=` with an epsilon, and skips the batch case.**
+    `fixtures/precedent/short_payment.json` carries `maxAbsDelta: 2` and the
+    controller's default tolerance for EXC-0142 computes to exactly 2.00, so a
+    strict `<` would have rejected PREC-03 and compiled the deterministic draft
+    instead. A batched remittance does not close on a delta at all, so its
+    placeholder `maxAbsDelta` is exempt.
+11. **`lib/cache.ts` and `package.json` ride in the store commit.**
+    `lib/adapters.ts` imports the cache and `lib/store.ts` imports `drizzle-orm`,
+    so committing them in the hardening slice would have left three commits whose
+    imports do not resolve. `.farm-commits.json` is ordered for import
+    resolution, not for slice order. Note that the intermediate commits are not
+    each independently type-clean: the `ApiError` shape changes in commit 2 and
+    the handlers that produce it land in commit 3.
+
+**Failed attempts.** None. No error resisted two corrections, because nothing was
+executed. Read that as "untested", not as "clean".
+
+**Files changed.**
+
+Created: `lib/config.ts`, `lib/errors.ts`, `lib/schemas.ts`, `lib/cache.ts`,
+`lib/store.ts`, `lib/db/schema.ts`, `lib/db/client.ts`, `drizzle/0000_init.sql`,
+`scripts/db-push.mjs`, `scripts/db-seed.mjs`,
+`app/api/close/journal/route.ts`, `vitest.config.ts`, `tests/precedent.test.ts`,
+`tests/schemas.test.ts`, `.farm-commits.json`.
+
+Edited: `lib/types.ts`, `lib/adapters.ts`, `lib/agent.ts`, `lib/dodo.ts`,
+`lib/precedent.ts` (the tolerance bound in `adoptModelRule` only, the executor is
+untouched), `app/api/precedent/route.ts`, `app/api/settlements/route.ts`,
+`app/close/page.tsx`, `app/page.tsx`, `components/close-queue.tsx`,
+`next.config.ts` (`serverExternalPackages: ["postgres"]`), `package.json`,
+`.env.example`, `CLAUDE.md`, `DEMO.md` (one row added to the route table, the six
+steps untouched), `README.md`, `HANDOFF.md`.
+
+Untouched on purpose: `IDENTITY.md`, `lib/data.ts`, `lib/fake-compiler.ts`,
+`fixtures/*`, `app/globals.css`, `app/icon.svg`, `components/ui/*`,
+`public/brand/*`, `scripts/seed.mjs`.
+
+**Commands run.** None, this phase was file edits only.
+
+**Phase 1's three open questions, resolved.**
+
+1. **Landing page reading `@/lib/data` directly. Resolved.** `app/page.tsx` is
+   now async and reads `getCloseState()`. Its open count subtracts the journal's
+   closures, so the two screens cannot disagree. Text and layout are unchanged.
+2. **`adoptModelRule` not bounding `maxAbsDelta`. Resolved.** The bound is in,
+   `<=` plus `1e-9`, skipped when `requireBatchSumMatch` is true or the action is
+   `split_match`. `fixtures/precedent/late_settlement.json` carries `0.02`
+   against a 0.00 tolerance and is now rejected, which pushes that pattern onto
+   the deterministic draft. HANDOFF 3B's "exercise the rejection path on purpose"
+   is covered by `tests/precedent.test.ts`; the ten live runs are still unrun.
+3. **Reset, settlement sequence and precedents living in React state. Resolved
+   for the persistence half, unverified for the rest.** All four now write to the
+   journal and all four hydrate from it. Whether a real Neon instance returns
+   them correctly has not been checked by anyone yet.
+
+**Open questions.**
+
+1. `postgresStore` has never been run against a real database. The SQL and the
+   drizzle schema were written by hand and kept in step by eye. The first
+   `npm run db:push` is the first time either is tested.
+2. `getCloseState()` swallows a store failure and serves the seed. That is the
+   right behaviour for a demo, but it means a misconfigured `DATABASE_URL` looks
+   exactly like a fresh close on screen. The only signal is one `[core] store
+   unavailable, serving the seed` line in the server log.
+3. The autonomy meter counts `summary.closedByCarriedPrecedents` (38) plus the
+   non-human closures in `statuses`. After a reload that is still correct, but
+   `raised` counts `summary.exceptionsRaised + live.length`, so a close that
+   accumulates many pulled settlements across sessions will move the denominator.
+   That is arguably right and is untested past three pulls.
+4. `drizzle-orm` 0.36 accepts the object return form for table constraints and
+   deprecates it in a later minor. If `npm install` resolves something newer than
+   the pinned caret allows, `lib/db/schema.ts` is the file to look at first.
+
+**Next best step.** Phase 3 should take HANDOFF 3D, the measurement view: a small
+results section fed by the same `getCloseState()` journal showing exceptions
+raised, closed with no human, autonomy before and after, and human touches. The
+data is now durable, so those numbers can be read back rather than recomputed
+from React state, which is what makes them checkable against the README table.
+Before that, the runner has to actually run `npm install`, `npm run build`,
+`npm test`, and one Neon round trip, because none of this phase is verified.

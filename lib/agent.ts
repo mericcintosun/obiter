@@ -24,6 +24,15 @@ import {
   type PrecedentRule,
 } from "@/lib/precedent";
 import { exceptionKindLabels, formatMoney, shortfall, shortfallPct } from "@/lib/data";
+import {
+  ANTHROPIC_API_KEY,
+  ANTHROPIC_MODEL,
+  ANTHROPIC_URL,
+  CLI_TIMEOUT_MS,
+  UPSTREAM_RETRIES,
+  UPSTREAM_TIMEOUT_MS,
+} from "@/lib/config";
+import { fail, type Failure } from "@/lib/errors";
 
 // "fixture" is produced by lib/fake-compiler.ts, which replays a recorded
 // emit_precedent answer through the same adoptModelRule validation this file
@@ -38,8 +47,41 @@ export interface CompileResult {
   elapsedMs: number;
 }
 
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5";
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+/**
+ * One upstream call, bounded twice: a hard timeout on each attempt, and exactly
+ * one retry. UPSTREAM_RETRIES is 1 and the loop is a counted `for`, so this can
+ * run at most twice no matter what the far end does. A model that hangs cannot
+ * hold a close screen open, and a transient 502 does not cost the demo a take.
+ */
+async function fetchOnce(url: string, init: RequestInit): Promise<Response> {
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= UPSTREAM_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      });
+      // A 5xx is the far end failing, not us. Anything else is an answer.
+      if (response.status >= 500 && attempt < UPSTREAM_RETRIES) continue;
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt < UPSTREAM_RETRIES) continue;
+    }
+  }
+
+  throw lastError ?? new Error("upstream did not answer");
+}
+
+/** Maps a thrown fetch error onto the closed ErrorCode union. */
+function upstreamFailure(error: unknown, what: string): Failure {
+  const name = error instanceof Error ? error.name : "";
+  if (name === "TimeoutError" || name === "AbortError") {
+    return fail("upstream_timeout", `${what} did not answer in time, so the offline compiler ran instead.`);
+  }
+  return fail("upstream_error", `${what} could not be reached, so the offline compiler ran instead.`);
+}
 
 function buildPrompt(input: DraftInput): string {
   const { exception, decision, queue } = input;
@@ -91,49 +133,73 @@ function buildPrompt(input: DraftInput): string {
   return lines.join("\n");
 }
 
-async function compileWithAnthropic(input: DraftInput): Promise<PrecedentRule | { error: string } | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
+/** One outcome of one compiler in the chain: a rule, a typed failure, or "not here". */
+type CompilerOutcome = PrecedentRule | Failure | null;
 
-  const response = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1024,
-      tool_choice: { type: "tool", name: "emit_precedent" },
-      tools: [
-        {
-          name: "emit_precedent",
-          description: "Emit the compiled precedent rule for this controller decision.",
-          input_schema: precedentJsonSchema,
-        },
-      ],
-      messages: [{ role: "user", content: buildPrompt(input) }],
-    }),
-  });
+async function compileWithAnthropic(input: DraftInput): Promise<CompilerOutcome> {
+  if (!ANTHROPIC_API_KEY) return null;
 
-  if (!response.ok) {
-    return { error: `Anthropic API returned ${response.status}` };
+  let response: Response;
+  try {
+    response = await fetchOnce(ANTHROPIC_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 1024,
+        tool_choice: { type: "tool", name: "emit_precedent" },
+        tools: [
+          {
+            name: "emit_precedent",
+            description: "Emit the compiled precedent rule for this controller decision.",
+            input_schema: precedentJsonSchema,
+          },
+        ],
+        messages: [{ role: "user", content: buildPrompt(input) }],
+      }),
+    });
+  } catch (error) {
+    return upstreamFailure(error, "The Anthropic API");
   }
 
-  const payload = (await response.json()) as {
-    content?: Array<{ type: string; name?: string; input?: unknown }>;
-  };
+  if (!response.ok) {
+    // The status is the whole message. A provider body may carry account
+    // details or an echoed prompt, so it never reaches a screen or a log.
+    return fail("upstream_error", `The Anthropic API answered with status ${response.status}.`);
+  }
+
+  let payload: { content?: Array<{ type: string; name?: string; input?: unknown }> };
+  try {
+    payload = (await response.json()) as typeof payload;
+  } catch {
+    return fail("parse_failure", "The Anthropic API answered with something that was not JSON.");
+  }
+
   const toolUse = payload.content?.find((block) => block.type === "tool_use" && block.name === "emit_precedent");
-  if (!toolUse) return { error: "Model answered without calling emit_precedent" };
+  if (!toolUse) return fail("parse_failure", "The model answered without calling emit_precedent.");
 
   const adopted = adoptModelRule(toolUse.input, input);
-  return adopted ?? { error: "Model output failed the precedent schema" };
+  return (
+    adopted ??
+    fail(
+      "parse_failure",
+      "The model wrote a rule that failed the precedent schema or reached past the tolerance the controller set."
+    )
+  );
 }
 
 let cliAvailable: boolean | null = null;
 
-function runCommand(command: string, args: string[], stdin?: string, timeoutMs = 45_000): Promise<string> {
+function runCommand(
+  command: string,
+  args: string[],
+  stdin?: string,
+  timeoutMs = CLI_TIMEOUT_MS
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"] });
     let out = "";
@@ -171,7 +237,7 @@ async function hasClaudeCli(): Promise<boolean> {
   return cliAvailable;
 }
 
-async function compileWithClaudeCli(input: DraftInput): Promise<PrecedentRule | { error: string } | null> {
+async function compileWithClaudeCli(input: DraftInput): Promise<CompilerOutcome> {
   if (!(await hasClaudeCli())) return null;
 
   const prompt = [
@@ -185,11 +251,20 @@ async function compileWithClaudeCli(input: DraftInput): Promise<PrecedentRule | 
     const raw = await runCommand("claude", ["-p", "--output-format", "text", "--model", "haiku"], prompt);
     const start = raw.indexOf("{");
     const end = raw.lastIndexOf("}");
-    if (start === -1 || end <= start) return { error: "Local claude CLI returned no JSON object" };
+    if (start === -1 || end <= start) {
+      return fail("parse_failure", "The local claude CLI returned no JSON object.");
+    }
     const adopted = adoptModelRule(JSON.parse(raw.slice(start, end + 1)), input);
-    return adopted ?? { error: "Local claude CLI output failed the precedent schema" };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Local claude CLI failed" };
+    return (
+      adopted ??
+      fail(
+        "parse_failure",
+        "The local claude CLI wrote a rule that failed the precedent schema or reached past the stated tolerance."
+      )
+    );
+  } catch {
+    // The CLI's own stderr can echo the prompt, so it is not carried outward.
+    return fail("upstream_error", "The local claude CLI did not produce a usable answer.");
   }
 }
 
@@ -201,15 +276,15 @@ export async function compilePrecedent(input: DraftInput): Promise<CompileResult
     { source: "anthropic" as const, run: compileWithAnthropic },
     { source: "claude-cli" as const, run: compileWithClaudeCli },
   ]) {
-    let outcome: PrecedentRule | { error: string } | null = null;
+    let outcome: CompilerOutcome = null;
     try {
       outcome = await attempt.run(input);
     } catch (error) {
-      outcome = { error: error instanceof Error ? error.message : "compiler call failed" };
+      outcome = upstreamFailure(error, "The precedent compiler");
     }
     if (outcome === null) continue;
     if ("error" in outcome) {
-      rejected = outcome.error;
+      rejected = outcome.hint;
       continue;
     }
     return { rule: outcome, source: attempt.source, rejectedModelOutput: rejected, elapsedMs: Date.now() - startedAt };

@@ -314,5 +314,21 @@ export function adoptModelRule(
   // scope beyond what the controller chose.
   if (parsed.data.scope.level !== input.decision.scopeLevel) return null;
   if (parsed.data.kind !== input.exception.kind) return null;
+
+  // Second guard rail: a rule may not reach past the tolerance the controller
+  // stated. The comparison is `<=` with an epsilon because a tolerance that lands
+  // exactly on the stated figure is the ordinary case, not an overreach: the
+  // demo's own decision states $2.00 and the compiled rule answers 2.
+  //
+  // A batched remittance is excluded because it does not close on a delta at
+  // all. It closes when the open invoices sharing one transfer sum to it to the
+  // cent, which is a fact about the data, so its maxAbsDelta is a placeholder
+  // the executor never reads.
+  const isBatch =
+    parsed.data.conditions.requireBatchSumMatch || parsed.data.action === "split_match";
+  if (!isBatch && parsed.data.conditions.maxAbsDelta > input.decision.toleranceAmount + 1e-9) {
+    return null;
+  }
+
   return parsed.data;
 }
