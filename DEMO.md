@@ -81,8 +81,13 @@ Autonomy is a number computed from the queue on screen, not a slide.
 | `/close` | `app/close/page.tsx` |
 | `/api/precedent` | `app/api/precedent/route.ts` |
 | `/api/settlements` | `app/api/settlements/route.ts` |
+| `/api/close/journal` | `app/api/close/journal/route.ts` |
 
 No other route may appear on camera. A phase that wants one adds it here first.
+
+`/api/close/journal` never appears on screen. It is the write the client makes
+after steps 4, 5 and 6 so that the close survives a reload: the same six steps,
+still on the same screens, with the browser refreshable between any two of them.
 
 ## How the demo runs without accounts
 
