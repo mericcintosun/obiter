@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { closeSummary, openExceptions } from "@/lib/data";
+import { getCloseState } from "@/lib/adapters";
 
 const compiledExample = `{
   "id": "PREC-03",
@@ -20,8 +20,17 @@ const compiledExample = `{
   "compiledFrom": "EXC-0142"
 }`;
 
-export default function Home() {
-  const open = openExceptions.length;
+// Same reason as the close screen: the counts below come from the journal, so
+// they have to be read per request rather than baked in at build time.
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  // Read through the same seam the close screen uses. Before this the landing
+  // page imported lib/data.ts directly, so the moment a precedent was persisted
+  // the two screens disagreed about how many exceptions were still open.
+  const { summary: closeSummary, open: queue, journal } = await getCloseState();
+  const closedIds = new Set(journal.closures.map((closure) => closure.exceptionId));
+  const open = queue.filter((exception) => !closedIds.has(exception.id)).length;
   const baseline = Math.round((closeSummary.closedByCarriedPrecedents / closeSummary.exceptionsRaised) * 100);
 
   return (

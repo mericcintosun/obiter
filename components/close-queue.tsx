@@ -27,7 +27,9 @@ import {
 } from "@/lib/precedent";
 import type {
   ApiError,
+  ClosureRow,
   CompilePrecedentResponse,
+  JournalRequest,
   SettlementResponse,
 } from "@/lib/types";
 
@@ -35,6 +37,15 @@ interface Props {
   initialQueue: ReconException[];
   summary: CloseSummary;
   carried: CarriedPrecedent[];
+  /**
+   * What the close ledger already holds. All four default to empty, so a queue
+   * rendered from the bare seed behaves exactly as it did before persistence
+   * existed. Everything here arrives from getCloseState() through the page.
+   */
+  initialPrecedents?: PrecedentRule[];
+  initialClosures?: ClosureRow[];
+  initialLive?: ReconException[];
+  initialSequence?: number;
 }
 
 type RowStatus =
@@ -70,6 +81,27 @@ function openStatuses(queue: ReconException[]): Record<string, RowStatus> {
   return map;
 }
 
+/**
+ * The queue as the ledger left it. Every row starts open and the recorded
+ * closures are laid over the top, which is what makes a reload show the seven
+ * sealed rows instead of seven open ones.
+ */
+function hydrateStatuses(
+  queue: ReconException[],
+  closures: ClosureRow[]
+): Record<string, RowStatus> {
+  const map = openStatuses(queue);
+  for (const closure of closures) {
+    if (!(closure.exceptionId in map)) continue;
+    map[closure.exceptionId] = {
+      state: "closed",
+      precedentId: closure.precedentId,
+      byHuman: closure.humanDecided,
+    };
+  }
+  return map;
+}
+
 const sourceLabels: Record<string, string> = {
   anthropic: "Claude via the Anthropic API",
   "claude-cli": "your local claude CLI",
@@ -77,12 +109,20 @@ const sourceLabels: Record<string, string> = {
   deterministic: "the offline deterministic compiler",
 };
 
-export function CloseQueue({ initialQueue, summary, carried }: Props) {
-  const [live, setLive] = useState<ReconException[]>([]);
+export function CloseQueue({
+  initialQueue,
+  summary,
+  carried,
+  initialPrecedents = [],
+  initialClosures = [],
+  initialLive = [],
+  initialSequence = 0,
+}: Props) {
+  const [live, setLive] = useState<ReconException[]>(initialLive);
   const [statuses, setStatuses] = useState<Record<string, RowStatus>>(() =>
-    openStatuses(initialQueue)
+    hydrateStatuses([...initialQueue, ...initialLive], initialClosures)
   );
-  const [precedents, setPrecedents] = useState<PrecedentRule[]>([]);
+  const [precedents, setPrecedents] = useState<PrecedentRule[]>(initialPrecedents);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [action, setAction] = useState<PrecedentAction>("close_as_rounding");
   const [scopeLevel, setScopeLevel] = useState<PrecedentScopeLevel>("counterparty_group");
@@ -94,7 +134,7 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
   const [inspecting, setInspecting] = useState<string | null>(null);
   const [justChanged, setJustChanged] = useState<string[]>([]);
   const [log, setLog] = useState<string[]>([]);
-  const settlementSeq = useRef(0);
+  const settlementSeq = useRef(initialSequence);
 
   const exceptions = useMemo(() => [...initialQueue, ...live], [initialQueue, live]);
   const openQueue = useMemo(
@@ -120,6 +160,30 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
   const note = useCallback((line: string) => {
     setLog((previous) => [line, ...previous].slice(0, 8));
   }, []);
+
+  /**
+   * Writes one entry to the close ledger. Fire and forget on purpose: the click
+   * is the controller's decision and the screen has already acted on it, so this
+   * never blocks, never shows a spinner, and never throws. If the write fails,
+   * the audit trail says the screen is ahead of the record and the controller
+   * can decide what to do about it.
+   */
+  const persist = useCallback(
+    (body: JournalRequest) => {
+      const missed = () =>
+        note("Not saved to the close ledger. The screen is ahead of the record.");
+      void fetch("/api/close/journal", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      })
+        .then((response) => {
+          if (!response.ok) missed();
+        })
+        .catch(missed);
+    },
+    [note]
+  );
 
   function selectException(exception: ReconException) {
     setError(null);
@@ -164,7 +228,7 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
         }),
       });
       const payload = (await response.json()) as CompilePrecedentResponse & Partial<ApiError>;
-      if (!response.ok) throw new Error(payload.error ?? "The compiler did not answer.");
+      if (!response.ok) throw new Error(payload.hint ?? "The compiler did not answer.");
       setProposal(payload);
       setPhase("proposed");
     } catch (caught) {
@@ -195,6 +259,14 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
     setProposal(null);
     setPhase("idle");
     setSelectedId(null);
+    persist({
+      op: "apply",
+      rule,
+      closedIds: touched,
+      humanDecidedId: selected.id,
+      source: proposal.source,
+      elapsedMs: proposal.elapsedMs,
+    });
   }
 
   function revertPrecedent(precedentId: string) {
@@ -211,6 +283,7 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
     flash(touched);
     note(`${precedentId} reverted. ${touched.length} records returned to the open queue.`);
     setInspecting(null);
+    persist({ op: "revert", precedentId });
   }
 
   async function pullSettlement() {
@@ -222,7 +295,7 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
     try {
       const response = await fetch(`/api/settlements?seq=${sequence}&id=${exceptionId}`);
       const payload = (await response.json()) as SettlementResponse & Partial<ApiError>;
-      if (!response.ok) throw new Error(payload.error ?? "The settlement feed did not answer.");
+      if (!response.ok) throw new Error(payload.hint ?? "The settlement feed did not answer.");
 
       settlementSeq.current = sequence + 1;
       const incoming = payload.exception;
@@ -244,6 +317,12 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
       );
       if (!hit) setSelectedId(incoming.id);
       setPhase("idle");
+      persist({
+        op: "settlement",
+        exception: incoming,
+        sequence,
+        closedByPrecedentId: hit?.id ?? null,
+      });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The settlement feed did not answer.");
       setPhase("idle");
@@ -261,6 +340,7 @@ export function CloseQueue({ initialQueue, summary, carried }: Props) {
     setPhase("idle");
     setLog([]);
     settlementSeq.current = 0;
+    persist({ op: "reset" });
   }
 
   const inspected = precedents.find((p) => p.id === inspecting) ?? null;
