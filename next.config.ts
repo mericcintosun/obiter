@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
   // Next infers the wrong workspace root and traces files from there. Pin the
   // root to this project.
   outputFileTracingRoot: path.join(__dirname),
+
+  // The Postgres driver opens raw sockets and resolves its own protocol modules,
+  // so it is left as a plain node require rather than bundled into the server
+  // output. Nothing else in the app is external.
+  serverExternalPackages: ["postgres"],
 };
 
 export default nextConfig;

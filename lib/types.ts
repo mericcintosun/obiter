@@ -2,9 +2,12 @@
 // so the shape crossing the network is written down once instead of being cast
 // into existence on each side.
 //
-// Nothing in this file computes anything. It re-exports the domain types that
-// already exist and names the three payloads the app moves over HTTP.
+// Nothing in this file computes anything, and every import is `import type`, so
+// the file erases to nothing at build time. That is deliberate: a client
+// component may import from here without dragging a database driver, a child
+// process module, or a server-only config read into its module graph.
 
+import type { Failure } from "@/lib/errors";
 import type { IncomingSettlement } from "@/lib/dodo";
 import type {
   CarriedPrecedent,
@@ -24,6 +27,7 @@ export type {
   CloseSummary,
   ControllerDecision,
   ExceptionKind,
+  Failure,
   IncomingSettlement,
   PrecedentAction,
   PrecedentRule,
@@ -31,10 +35,56 @@ export type {
   ReconException,
 };
 
-/** Every handler in this app answers a failure with exactly this body. */
-export interface ApiError {
-  error: string;
+/**
+ * The failure body. Kept under the old name so every existing import still
+ * resolves; the shape is now the typed `Failure` from lib/errors.ts rather than
+ * a bare string, so a caller can branch on the code and show the hint.
+ */
+export type ApiError = Failure;
+
+/** One exception closed under one precedent, as the ledger records it. */
+export interface ClosureRow {
+  exceptionId: string;
+  precedentId: string;
+  /** True for the single record the controller resolved by hand. */
+  humanDecided: boolean;
 }
+
+/**
+ * Everything about this close that was written down rather than seeded. The
+ * seed in lib/data.ts is the August 2026 baseline and never changes; the
+ * journal is what the controller did on top of it, and it is what has to
+ * survive a reload.
+ */
+export interface CloseJournal {
+  precedents: PrecedentRule[];
+  closures: ClosureRow[];
+  /** Settlements pulled during the close, already in exception shape. */
+  live: ReconException[];
+  /** The next settlement sequence to request. 0 on an untouched close. */
+  sequence: number;
+}
+
+/** What the client posts to /api/close/journal. One entry per ledger write. */
+export type JournalRequest =
+  | {
+      op: "apply";
+      rule: PrecedentRule;
+      closedIds: string[];
+      /** The one record a human actually resolved, or null. */
+      humanDecidedId: string | null;
+      /** Which compiler wrote the rule. Recorded for the audit trail. */
+      source?: string;
+      elapsedMs?: number;
+    }
+  | { op: "revert"; precedentId: string }
+  | {
+      op: "settlement";
+      exception: ReconException;
+      sequence: number;
+      closedByPrecedentId: string | null;
+    }
+  | { op: "reset" };
 
 /**
  * What POST /api/precedent returns. `wouldClose` is computed by the same
@@ -59,12 +109,14 @@ export interface SettlementResponse {
 }
 
 /**
- * Everything the close screen needs to render. Today this comes from the seed
- * in lib/data.ts through lib/adapters.ts. Phase 2 points the real branch at
- * Postgres and this shape does not move.
+ * Everything the close screen needs to render: the seed, plus whatever the
+ * ledger has recorded on top of it. `open` is the seed queue with any persisted
+ * live settlements appended, so a page that only reads `open` still renders a
+ * complete queue.
  */
 export interface CloseState {
   summary: CloseSummary;
   carried: CarriedPrecedent[];
   open: ReconException[];
+  journal: CloseJournal;
 }
