@@ -2,8 +2,9 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+// RADIUS is sharp in IDENTITY.md, so badges are square-cornered stamps, not pills.
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
+  "inline-flex items-center rounded-xs border px-2 py-0.5 text-xs font-medium transition-colors",
   {
     variants: {
       variant: {
@@ -11,6 +12,10 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground",
         outline: "border-border text-foreground",
         destructive: "border-transparent bg-destructive text-destructive-foreground",
+        // A precedent stamped on a record: the only place the seal color appears.
+        seal: "border-transparent bg-seal text-ground",
+        closed: "border-second text-second",
+        pending: "border-warn text-warn",
       },
     },
     defaultVariants: { variant: "default" },
