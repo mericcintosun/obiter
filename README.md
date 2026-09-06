@@ -80,15 +80,26 @@ Clearing all six patterns takes it to 56 of 62, which is 90 percent, on six huma
 
 ### The compiler fallback chain
 
-With `ADAPTER_MODE=real`, `compilePrecedent` in `lib/agent.ts` tries three paths in order:
+With `ADAPTER_MODE=real`, `compilePrecedent` in `lib/agent.ts` tries four paths in order:
 
 1. Claude via the Anthropic API, when `ANTHROPIC_API_KEY` is set. **This is the path the recorded demo must run on.**
-2. Your local `claude` CLI, detected once with `claude --version` and invoked with `claude -p --output-format text --model haiku`. This exists so a developer gets the real agent loop with zero keys and zero cost.
-3. The deterministic draft in `lib/precedent.ts`, built from the controller's own inputs.
+2. Your local `claude` CLI, detected once with `claude --version` and invoked with `claude -p --output-format text --model haiku`. This exists so a developer gets the real agent loop with zero keys and zero cost. It is skipped on Vercel, where the binary is not installed.
+3. The recorded answer in `fixtures/precedent/`, replayed through `lib/fake-compiler.ts`.
+4. The deterministic draft in `lib/precedent.ts`, built from the controller's own inputs.
 
-With `ADAPTER_MODE` unset or `fake`, `lib/fake-compiler.ts` runs instead: it replays a recorded `emit_precedent` answer from `fixtures/precedent/`, and falls to the same deterministic draft when no fixture covers the record on the desk.
+With `ADAPTER_MODE` unset or `fake`, `lib/fake-compiler.ts` runs on its own: it replays a recorded `emit_precedent` answer from `fixtures/precedent/`, and falls to the same deterministic draft when no fixture covers the record on the desk.
 
 Every one of those paths goes through the same Zod schema and the same `adoptModelRule` guard. Output that fails it is discarded and the caller moves on, which is why a bad generation, and equally a stale fixture, cannot reach the queue. The prompt the real path sends is written out in `prompts/precedent-compiler.md`.
+
+### What keeps the demo on the rails
+
+Three bounds, all in the real path, all there because the recording is the deliverable.
+
+**The compile step has a six second budget.** `COMPILE_TIMEOUT_MS` is 6000 and `COMPILE_RETRIES` is 0, both in `lib/config.ts`. The demo contract allows the compile five seconds of feel, so the model gets six and then loses its turn. A retry would double the worst case, and the next compiler in the chain is a better use of the seventh second than a second attempt at the same call.
+
+**The fixture is a rung in the real chain, not only the fake one.** When the provider times out or answers with a 500 mid-recording, the chain lands on the checked-in `emit_precedent` answer, which goes through the same `adoptModelRule` guard a live answer does. So an outage yields "PREC-03: Rounding shortfall up to $2.00, Northwind Group", the rule the demo script quotes, instead of a differently named deterministic draft. The draft is still there underneath, for a pattern no fixture was recorded for.
+
+**The settlement feed picks money that can actually close.** `fetchLatestSettlement` in `lib/dodo.ts` asks Dodo for a page of ten succeeded payments rather than the single newest one, and `pickSettlement` walks the ones `usableForDemo` accepts: an invoice number that is not an `INV-UNMAPPED` placeholder, and a positive shortfall, because a payment that is not short cannot demonstrate a precedent closing it. A second and third pull return different money. When the page holds nothing usable, the fixture in the same file answers and one line goes to the server log saying so.
 
 ## Tech stack
 
@@ -114,11 +125,14 @@ npm run dev
 ```
 
 ```bash
-npm test          # vitest, run once
-npm run seed      # writes fixtures/close-august-2026.json from lib/data.ts
-npm run db:push   # applies drizzle/0000_init.sql to DATABASE_URL
-npm run db:seed   # clears the journal for OBITER_CLOSE_ID, back to the baseline
+npm test           # vitest, run once
+npm run seed       # writes fixtures/close-august-2026.json from lib/data.ts
+npm run db:push    # applies drizzle/0000_init.sql to DATABASE_URL
+npm run db:seed    # clears the journal for OBITER_CLOSE_ID, back to the baseline
+npm run demo:reset # puts the demo back at 24 open exceptions and 61 percent
 ```
+
+`npm run demo:reset` is the one to run between takes. With `DATABASE_URL` set it deletes the closures, the pulled settlements and the precedents for this close id and prints the counts. Without one it says so and tells you the reset is a dev server restart or the "Reset the close" button, then prints the state the close screen should show either way. There is no chain in this repo and no on-chain fixture, so the close journal is the only mutable state there is to put back.
 
 **Persistence needs three things and none of them are required to run the app.** Put a Neon pooled connection string in `.env.local` as `DATABASE_URL`, with `?sslmode=require` on the end; run `npm run db:push` once to create the three tables in `drizzle/0000_init.sql`; run `npm run db:seed` whenever you want the close back at its August 2026 baseline.
 

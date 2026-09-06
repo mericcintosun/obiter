@@ -103,6 +103,8 @@ This repo is a working scaffold, not an empty template. `npm install && npm run 
 | `drizzle/0000_init.sql` | The three tables as plain SQL. `npm run db:push` applies it; `lib/db/schema.ts` mirrors it by hand. |
 | `app/api/close/journal/route.ts` | POST. The one write endpoint for the close ledger. Never appears on camera. |
 | `tests/*` | Vitest. `precedent.test.ts` pins the seven id PREC-03 preview; `schemas.test.ts` pins the edge rejections. |
+| `app/loading.tsx`, `app/close/loading.tsx` | `HomeSkeleton` and `CloseQueueSkeleton`. The two demo routes' loading branches, each holding its own page's rhythm. |
+| `scripts/demo-reset.mjs` | `npm run demo:reset`. Clears the journal for `OBITER_CLOSE_ID` and prints the state DEMO.md step 1 opens on. Works without a database too. |
 
 **Real vs mocked**
 
@@ -423,10 +425,212 @@ Untouched on purpose: `IDENTITY.md`, `lib/data.ts`, `lib/fake-compiler.ts`,
    deprecates it in a later minor. If `npm install` resolves something newer than
    the pinned caret allows, `lib/db/schema.ts` is the file to look at first.
 
-**Next best step.** Phase 3 should take HANDOFF 3D, the measurement view: a small
+**Next best step (written at the end of Phase 2).** Phase 3 should take HANDOFF 3D, the measurement view: a small
 results section fed by the same `getCloseState()` journal showing exceptions
 raised, closed with no human, autonomy before and after, and human touches. The
 data is now durable, so those numbers can be read back rather than recomputed
 from React state, which is what makes them checkable against the README table.
 Before that, the runner has to actually run `npm install`, `npm run build`,
 `npm test`, and one Neon round trip, because none of this phase is verified.
+
+---
+
+### Phase 3, 6 September 2026: the whole demo path on the real flow
+
+**Goal.** Make all six DEMO.md steps survive `ADAPTER_MODE=real`, which is the
+mode the recorded submission has to run in. Bound the compile step to a budget a
+camera can sit through, put the checked-in fixture into the real chain so a
+provider outage cannot take the recording off script, run step 6 against the real
+Dodo feed with a fixture underneath it, give both demo routes a named skeleton,
+error and empty branch, guard the write path, and add one command that puts the
+whole system back to 24 open exceptions at 61 percent.
+
+**Status.** All five slices done. Nothing was cut. **Not verified by me: nothing
+in this phase was executed, because the session had file tools only.**
+`npm install`, `npm run build`, `npm test`, `npm run demo:reset` and the browser
+are all unrun. Read every claim below as "written", not "proven".
+
+**What is real now.**
+
+- The compile call is bounded to `COMPILE_TIMEOUT_MS` (6000) with
+  `COMPILE_RETRIES` (0). `fetchOnce` in `lib/agent.ts` takes `timeoutMs` and
+  `retries` as parameters, defaulting to the generous upstream pair, and
+  `compileWithAnthropic` passes the tight one.
+- `compileWithClaudeCli` returns `null` immediately when `RUNNING_ON_VERCEL`.
+  The binary is not installed there, so the spawn probe could only cost the
+  recording time.
+- `compilePrecedent` is four rungs: anthropic, claude-cli, fixture, deterministic.
+  The fixture rung calls `compilePrecedentFromFixtures` and is returned with
+  `elapsedMs` recomputed against the chain's own clock.
+- `fetchLatestSettlement` asks Dodo for `?page_size=10&status=succeeded`, maps
+  the page, and hands it to `pickSettlement`, which filters on `usableForDemo`
+  and walks the survivors by sequence. The fixture fallback and its one
+  `console.warn` live in the same function.
+- Both demo routes have a named triad: `CloseQueueSkeleton`, `HomeSkeleton`,
+  `RouteErrorState` (retry through `reset()`), `QueueErrorState` (retry through
+  `retryFailed`, which reruns whichever of `compile` or `pullSettlement` failed)
+  and `QueueEmptyState` (whose call to action is the settlement pull).
+- Every journal write carries an `idempotencyKey`, minted inside `persist` so a
+  call site cannot forget one, required by `journalRequestSchema` on all four
+  ops, and checked by `markJournalWrite` before the route touches the store.
+- `npm run demo:reset` exists and works with or without `DATABASE_URL`.
+
+**What is still mocked or fallback.**
+
+- The three fixture settlements in `lib/dodo.ts` are still what the demo runs on
+  unless `DODO_PAYMENTS_API_KEY` is set. `pickSettlement` has never seen a real
+  Dodo response body, and the `items` / `data` envelope guess from Phase 1 is
+  still a guess.
+- `fixtures/precedent/` is still the compiler in fake mode, and is now also the
+  third rung in real mode.
+- `lib/data.ts` is still the only source of the 24 open exceptions, the 62
+  raised, the 38 carried closures and the six patterns.
+- HANDOFF 3D, the measurement view, is untouched. The README table is still
+  written by hand rather than read back from the journal.
+
+**Decisions.**
+
+1. **Persistence stays Postgres on Neon behind `lib/store.ts`**, from the
+   "relational reads the demo filters or joins" row of the decision table. The
+   KV row was rejected because steps 4, 5 and 6 write three related row sets
+   (precedents, closures, live exceptions) that step 1 reads back joined after a
+   reload, and a key-value store would have meant reassembling that join in
+   application code on every render. The "none" row was rejected in Phase 2 for
+   the reason the pitch turns on: a precedent that does not survive a reload is
+   not a precedent. Nothing in this phase moved that line, and no route or
+   component imports `postgres` or `drizzle-orm` directly.
+2. **There is no chain state, so there is no on-chain half to reset.** This repo
+   has no `contracts/` directory, no wallet dependency and no on-chain fixture.
+   `scripts/demo-reset.mjs` says so in its header and the README says so under
+   the command. The close journal is the only mutable state Obiter has.
+3. **The fixture sits above the deterministic draft, not below it.** Both are
+   offline, so the ordering is not about availability. It is about which rule
+   appears on screen: the fixture is the recorded `emit_precedent` answer that
+   compiles to "PREC-03: Rounding shortfall up to $2.00, Northwind Group", which
+   is what DEMO.md step 3 quotes, and the draft is named from the controller's
+   own inputs and would read differently. Both go through `adoptModelRule`.
+4. **Six seconds, zero retries.** DEMO.md allows the compile five seconds of
+   feel. A retry inside the Anthropic rung would double the worst case to twelve
+   and buy nothing the next rung does not buy faster, so the next compiler in the
+   chain is the retry. This is the one call the whole recording waits on.
+5. **`markJournalWrite` is honest about being half a solution.** It is a `Set` in
+   one server process capped at `JOURNAL_KEY_MAX`, so it catches a double click
+   that lands twice on the same instance and catches nothing across instances or
+   after a restart. The durable half is the natural keys already in
+   `lib/store.ts`: `onConflictDoUpdate` on `precedents`, `onConflictDoNothing` on
+   `closures` and `live_exceptions`. The comment in `lib/cache.ts` says exactly
+   that rather than implying the cache is the guarantee.
+6. **`persist` mints the key, callers do not.** `JournalRequest` requires
+   `idempotencyKey` on every member, and `persist` takes a distributive
+   `WithoutKey<JournalRequest>` so the four call sites stay as they were. A plain
+   `Omit` over that union would have collapsed the `op` discriminator.
+7. **The apply and revert pending flags are real but their window is one tick.**
+   Both functions are synchronous (`persist` is fire and forget), so React
+   batches `"applying"` and `"idle"` into one render and the button is never seen
+   disabled. They are still bound to pending state rather than to a timeout, as
+   the gate requires, and the actual double-click protection is that a second
+   apply finds `proposal` already null and a second revert finds the precedent
+   already gone. The idempotency key covers the case where two requests do get
+   out of the browser.
+8. **`components/close-queue.tsx` is committed with slice 4, not slice 3.** It
+   carries both the two new state components and the idempotency key, and git
+   commits whole files. Putting it in the slice 4 commit means both commits are
+   independently type-clean, because the key it sends and the `JournalRequest`
+   that requires it land together.
+9. **`lib/config.ts` rides in the first commit and carries `JOURNAL_KEY_MAX`
+   too.** `lib/cache.ts` in commit 4 imports it, and a constant that is unused
+   for two commits is cheaper than a commit whose import does not resolve.
+10. **`tests/schemas.test.ts` was edited, not deleted.** Two of its cases parsed
+    a bare `{ op: "reset" }`, which the new schema rejects. They were rewritten
+    into one case that pins the rejection of a keyless write and one that accepts
+    both ops when a key is present.
+
+**Failed attempts.** None. No error resisted two corrections, because nothing was
+executed. Read that as "untested", not as "clean".
+
+**Files changed.**
+
+Created: `app/loading.tsx`, `scripts/demo-reset.mjs`, `.farm-commits.json`.
+
+Edited: `lib/config.ts` (three compile constants, `RUNNING_ON_VERCEL`,
+`JOURNAL_KEY_MAX`), `lib/agent.ts` (parameterised `fetchOnce`, the Vercel skip,
+the fixture rung), `lib/dodo.ts` (`usableForDemo`, `pickSettlement`, the page
+request, the fallback warning), `lib/cache.ts` (`markJournalWrite`),
+`lib/schemas.ts`, `lib/types.ts`, `app/api/close/journal/route.ts`,
+`app/close/loading.tsx` (the export name only), `app/error.tsx` (the export name
+only), `app/page.tsx` (`next/image` on the illustration),
+`components/close-queue.tsx`, `tests/schemas.test.ts`, `package.json`,
+`.env.example`, `README.md`, `CLAUDE.md`, `HANDOFF.md`.
+
+Untouched on purpose: `IDENTITY.md`, `DEMO.md` (the six steps and the routes
+table are the contract), `lib/data.ts`, `lib/precedent.ts`, `lib/store.ts`,
+`lib/db/*`, `drizzle/0000_init.sql`, `lib/adapters.ts`, `lib/fake-compiler.ts`,
+`app/api/settlements/route.ts`, `app/api/precedent/route.ts`,
+`app/close/page.tsx`, `app/layout.tsx`, `app/globals.css`, `app/icon.svg`,
+`components/ui/*`, `public/brand/*`, `scripts/seed.mjs`, `scripts/db-seed.mjs`,
+`scripts/db-push.mjs`.
+
+**Commands run.** None. This session had Write, Edit, Read, Glob and Grep only.
+
+**Tripwire grep counts, run by me over the repo.**
+
+- The 24 banned hex values: zero hits under `app/` and `components/`. One hit in
+  `IDENTITY.md` line 21, which is the DIFFERS_FROM sentence naming them as the
+  palettes that were rejected.
+- `fade-up`, `float`, `float-y`, `glow-pulse`, `caret-blink`, `pulse-dot`,
+  `--delay`, `--d`, `backdrop-blur`, `bg-*/85`: zero hits repo-wide except the
+  same `IDENTITY.md` line.
+- `@keyframes`: exactly two, `obiter-wipe` and `obiter-stamp`, both in
+  `app/globals.css`.
+- Hex literals under `app/`: `app/globals.css` (the nine tokens) and
+  `app/icon.svg` (the mark, which CLAUDE.md already exempts). Zero under
+  `components/`.
+- `<Image` with a `/brand/` src: exactly one, `app/layout.tsx:51`. The landing
+  illustration is `/illustrations/ledger-rule.svg`.
+- `useEffect` in `components/close-queue.tsx`: zero.
+- `process.env`: `lib/config.ts` and `scripts/*.mjs` only. `node:fs`,
+  `writeFileSync`, `readFileSync`: `scripts/` only.
+- `from "postgres"` / `from "drizzle-orm`: `lib/db/*`, `lib/store.ts` and
+  `scripts/*.mjs` only. No route, no component.
+
+**Acceptance items I could not meet by reading.**
+
+1. Everything that needs a command. `npm run build`, `npm test`,
+   `npm run demo:reset`, the three consecutive DEMO.md walks, the deliberately
+   wrong key take, and the Vercel walk at 375px are all the runner's or the
+   human's, and none of them has been run.
+2. The apply and revert disabled props exist and are bound to pending state, but
+   as decision 7 says, the disabled state never renders because both functions
+   are synchronous. Do not describe them on camera as a spinner.
+3. `pickSettlement` is written against the Dodo response envelope guessed in
+   Phase 1 (`items` then `data`). If the live feed returns a different envelope,
+   `mapDodoPayments` gets an empty array, `pickSettlement` returns null, and the
+   fixture answers with a warning in the log. That is the right failure, but it
+   means a wrong envelope looks exactly like an empty test account.
+
+**Open questions.**
+
+1. Nothing from Phase 2's open questions was closed. `postgresStore` still has
+   not met a real database, a misconfigured `DATABASE_URL` still looks like a
+   fresh close, and the autonomy denominator still grows with pulled settlements.
+2. `app/loading.tsx` is the root segment's loading UI, so it also covers any
+   future route that does not bring its own. Today that is only `/`, because
+   `/close` has `app/close/loading.tsx`. A third page would need its own.
+3. `markJournalWrite` lives in `lib/cache.ts` next to the compile cache. Both are
+   in-process Maps or Sets, so they belong together, but if a third one appears
+   the file should be split rather than grown.
+4. `usableForDemo` rejects a payment that is not short. On the real Dodo test
+   feed most payments settle in full, so the live path may fall to the fixture
+   more often than not. That is the designed behaviour, not a failure, but it
+   means the "Source: Dodo Payments test environment" evidence line will
+   frequently read "local settlement fixture" instead. Worth knowing before the
+   recording.
+
+**Next best step.** HANDOFF 3D, the measurement view. The journal now carries
+every number the README table claims: exceptions raised, closures with no human,
+autonomy before and after, and human touches, all durable across a reload and all
+already computed in `components/close-queue.tsx` from state that now comes out of
+`getCloseState()`. Read them back into a small section rather than recomputing
+them, so a judge can watch a number move during the demo and then read the same
+number in the README. Requirement 7 asks for exactly that and the judges weight
+reliability at 25 percent.

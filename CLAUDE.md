@@ -13,6 +13,7 @@ npm test        # vitest, run once. Pins the seven id PREC-03 preview.
 npm run seed    # writes fixtures/close-august-2026.json from lib/data.ts
 npm run db:push # applies drizzle/0000_init.sql to DATABASE_URL
 npm run db:seed # clears the journal for OBITER_CLOSE_ID, back to the baseline
+npm run demo:reset # puts the demo back at 24 open exceptions, 61 percent
 ```
 
 `npm run build` and `npm test` are the two gates. Neither database script is
@@ -54,7 +55,9 @@ Later phases inherit these. Breaking one is a deploy failure, not a lint warning
    reads `process.env`, and every key it reads is mirrored in `.env.example`.**
    Currently `ADAPTER_MODE`, `DATABASE_URL`, `OBITER_CLOSE_ID`,
    `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `ANTHROPIC_URL`,
-   `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_API_BASE`. Scripts under
+   `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_API_BASE`, `VERCEL`. `VERCEL` is set
+   by the platform and read only as `RUNNING_ON_VERCEL`; never set it by hand.
+   Scripts under
    `scripts/*.mjs` read the environment directly, because they run under plain
    node and never ship to a browser. Never commit a real key, and never give one
    a `NEXT_PUBLIC_` prefix.

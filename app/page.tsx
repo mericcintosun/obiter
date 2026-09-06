@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -69,12 +70,16 @@ export default async function Home() {
       </p>
 
       <figure className="mt-10">
-        <img
+        {/* unoptimized because the image optimizer refuses SVG in production, and
+            this asset is ours and already small. This is an illustration, not a
+            brand mark, so the one mark rule in app/layout.tsx is untouched. */}
+        <Image
           src="/illustrations/ledger-rule.svg"
           alt="A ruled queue where three entries carry a precedent seal in the margin and five are still open"
-          className="w-full border border-border"
           width={900}
           height={280}
+          unoptimized
+          className="w-full border border-border"
         />
         <figcaption className="mt-3 text-sm text-muted-foreground">
           Entries closed under a precedent carry its seal in the margin. Anything without a seal
