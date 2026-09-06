@@ -55,16 +55,30 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <header className="sticky top-0 z-20 border-b border-border bg-ground">
           <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
-            <Link href="/" className="flex items-center gap-2.5">
-              <Image
-                src="/brand/logo.png"
-                alt=""
-                width={26}
-                height={26}
-                priority
-                className="h-[26px] w-[26px] object-contain"
-              />
-              <span className="font-display text-lg tracking-tight">Obiter</span>
+            {/* The one mark in the app. Framed in a hairline tile so the raster
+                has an edge against the identical ground, and paired with a
+                dateline-style line naming the product. One next/image element,
+                no second brand image, and never public/logo.svg. */}
+            <Link href="/" className="flex items-center gap-3">
+              <span className="obiter-masthead-mark">
+                <Image
+                  src="/brand/logo.png"
+                  alt=""
+                  width={30}
+                  height={30}
+                  priority
+                  className="h-[30px] w-[30px] object-contain"
+                />
+              </span>
+              <span className="flex flex-col leading-none">
+                <span className="font-display text-lg tracking-tight">Obiter</span>
+                {/* Hidden under sm: at 360 the nav takes most of the row and a
+                    tracked line this long would wrap the masthead onto a second
+                    line inside a 56px header. */}
+                <span className="obiter-dateline mt-0.5 hidden sm:block">
+                  Case reporter for the close
+                </span>
+              </span>
             </Link>
             <SiteNav />
           </div>
@@ -73,8 +87,39 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main>{children}</main>
 
         <footer className="mt-24 border-t border-border">
-          <div className="mx-auto max-w-5xl px-5 py-8 text-sm text-muted-foreground">
-            <p>
+          <div className="mx-auto max-w-5xl px-5 py-9">
+            {/* The four link kinds a judge checks: the demo route, the repo, the
+                security note, and the hackathon page. Ruled row, no icons, no
+                target, matching the nav. */}
+            <nav aria-label="Footer" className="obiter-footer-links text-sm">
+              <Link
+                href="/close"
+                className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+              >
+                Close queue
+              </Link>
+              <a
+                href="https://github.com/mericcintosun/obiter"
+                className="inline-flex min-h-11 items-center text-muted-foreground underline-offset-4 hover:underline"
+              >
+                Source
+              </a>
+              <a
+                href="https://github.com/mericcintosun/obiter/blob/main/SECURITY.md"
+                className="inline-flex min-h-11 items-center text-muted-foreground underline-offset-4 hover:underline"
+              >
+                SECURITY.md
+              </a>
+              <a
+                href="https://syndicate-by-maximor.devpost.com/"
+                className="inline-flex min-h-11 items-center text-muted-foreground underline-offset-4 hover:underline"
+              >
+                Syndicate by Maximor
+              </a>
+            </nav>
+
+            <div className="mt-6 text-sm text-muted-foreground">
+              <p>
               Obiter. Built for the Syndicate by Maximor hackathon, Track 2, Autonomous Office of
               the CFO. Seed data is a fictional August 2026 close for a company called Halden
               Analytics.
@@ -96,7 +141,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>
               . The close on screen is fictional, and Obiter stores no customer records and no
               payment data of its own.
-            </p>
+              </p>
+            </div>
           </div>
         </footer>
       </body>
