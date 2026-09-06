@@ -1033,3 +1033,201 @@ of them fails, the rollback is the two `sameOriginOk` calls and it costs a
 minute. After that, the highest-value code item left is still HANDOFF 3B: ten
 live compiler runs across all six patterns, now with the delimited prompt in
 place, watching for a rule wider than the controller asked for.
+
+---
+
+### Phase 8, 6 September 2026: structural frontend overhaul, the letterpress pass
+
+**Goal.** Make the cold open survivable. Before this phase a judge landing on
+`https://obiter-app.vercel.app/` saw a gray wall of body text whose only way into
+the product sat two and a half screens down, so the first ten seconds carried no
+product, no proof and no way in. After it the first viewport carries the claim,
+the state of the August 2026 close in one sentence with the live figures in it,
+and the CTA into DEMO step 1, and `/close` reads as a ruled ledger rather than an
+undifferentiated list. No route added, no DEMO.md string reworded.
+
+**Status.** All six slices done. Nothing was cut. **Not verified by me: nothing
+in this phase was executed, because this session had Write, Edit, Read, Glob and
+Grep only.** `npm install`, `npm run build`, `npm test` and the browser are all
+unrun. The greps below were run with the Grep tool and their counts are real;
+everything about how the page looks after the change is reasoning from the code,
+not from a screenshot, because I could not take one.
+
+**What changed on screen.**
+
+- **The fold.** `app/page.tsx` now runs kicker, h1 (wording unchanged), a
+  full-ink standfirst on the new `.obiter-lede`, a dateline reading the entity
+  and period off `closeSummary`, one sentence carrying `exceptionsRaised`,
+  `baseline` percent and `open` with `obiter-figure` on the figures, and then the
+  `<Button size="lg" asChild>` wrapping `<Link href="/close">`. The ledger
+  illustration moved up under it as the first screen's spill. The old lower CTA
+  block is gone; its sentence about the measured result panel was folded into
+  section 2 word for word.
+- **The masthead.** The one raster mark sits in a hairline `--line` tile on
+  `bg-ground` at 30px, with a small caps dateline sibling under the wordmark
+  reading "Case reporter for the close". Still exactly one `next/image` element
+  in the header, still `/brand/logo.png`, still no `public/logo.svg`.
+- **The footer.** A ruled link row above the two standing paragraphs: Close queue
+  (`/close`), Source, `SECURITY.md`, and the hackathon page. Both Phase 5
+  paragraphs are byte unchanged.
+- **The sections.** Five running heads in the label face over the five `<h2>`
+  elements, each carrying the rule that used to be a bare divider.
+- **Built on.** One prose paragraph became a ruled `<dl>` of five entries in the
+  body face: Agent Orchestrator, Claude, Zod, Dodo Payments, Next.js 15 and
+  TypeScript. No numerals, no mono, no tiles.
+- **`/close`.** The bare `aria-hidden` bar became a labeled ruled frame with
+  `role="progressbar"`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax` and an
+  `aria-label` naming autonomy. A column header row (id, counterparty, pattern,
+  shortfall, status) sits above `ul.obiter-queue`, hidden under `sm` exactly the
+  way `components/close-measures.tsx` hides its own, with the per-cell widths
+  mirrored so the rows still line up. Closed rows carry a cobalt seal margin
+  (`border-l-2 border-seal pl-2`) instead of `opacity-70`. The measures panel
+  gained a rule above it and nothing else: its four rows and their labels are the
+  step 7 contract and were not opened.
+
+**Decisions.**
+
+1. **The running head carries the section rule, so the standalone divider is
+   gone from between sections.** `.obiter-runninghead` is `.obiter-label` with a
+   `border-top` and padding. One `<div className="obiter-rule mt-10" />` survives,
+   directly under the fold's figure, as the line that closes the first screen.
+   Two hairlines separated by whitespace would have read as noise.
+2. **The standfirst is ink, not muted.** It was the loudest paragraph on the page
+   set lighter than the body under it, which inverted the reading order. The
+   `.obiter-lede` class sets `1.15rem`, `line-height: 1.7` and
+   `var(--foreground)`, and nothing else on the page uses it.
+3. **The closed row gained a seal margin rather than losing opacity.** A record
+   closed under a precedent is more settled than an open one, not less present,
+   and the landing illustration already draws it that way.
+4. **The meter's percent is printed next to its label.** The sentence above it
+   already says the number, but a bar with no printed value is a decoration; the
+   panel below it is the audited version and this is the glance version.
+5. **The queue column header is hidden under `sm`, not reflowed.** Under `sm` the
+   row itself wraps to three lines and the columns are no longer side by side, so
+   a header would name columns that do not exist at that width. That is the same
+   call `components/close-measures.tsx` made in Phase 4.
+6. **`:focus-visible` is global and additive.** `components/ui/button.tsx`
+   already replaces its `outline-none` with `focus-visible:ring-2
+   focus-visible:ring-ring`; the new global rule covers the links and the
+   `<details>` summary that are not shadcn primitives. No `outline-none` was
+   added anywhere.
+7. **`app/loading.tsx` was left alone.** `HomeSkeleton` mirrors the old landing
+   rhythm and now mirrors it less well, but it is a loading branch that shows for
+   a few hundred milliseconds on a force-dynamic route, and rewriting it would
+   have cost fold time. Written here rather than fixed.
+8. **The masthead dateline is hidden under `sm`.** At 360 the nav takes roughly
+   225 of the 350 usable pixels in the header row, and a tracked uppercase line
+   that long would have wrapped the masthead onto a second line inside a 56px
+   header, which is the one way this change could have introduced a horizontal
+   scroll. The mark tile and the wordmark are unconditional.
+
+**Failed attempts.** None. No edit needed a second correction. Read that as
+"untested", not as "clean": nothing here was executed.
+
+**Files changed.**
+
+Created: `.farm-delta.md`, `.farm-commits.json`.
+
+Edited: `app/globals.css` (the device classes and the focus rule; the nine hexes,
+the two keyframes and the reduced-motion block are untouched), `app/layout.tsx`
+(the masthead framing and the footer link row), `app/page.tsx` (the first screen,
+the running heads, the figure position, the Built on ledger),
+`components/close-queue.tsx` (the meter frame, the column header, the closed-row
+margin), `components/close-measures.tsx` (the section frame only, one line),
+`IDENTITY.md` (one dated Amendments line), `README.md` (one line naming the live
+URL and `/close` as the demo start route), `HANDOFF.md`.
+
+Untouched on purpose: `DEMO.md` (the seven steps and the route table are the
+contract), `components/site-nav.tsx`, `components/ui/*`, `app/icon.svg`,
+`app/opengraph-image.png`, `app/loading.tsx`, `app/close/*`, `app/api/*`,
+`lib/*`, `fixtures/*`, `drizzle/*`, `scripts/*`, `tests/*`, `public/*`,
+`.env.example`, `package.json` (this phase added no dependency, no route, no env
+key and no schema change).
+
+**Commands run.** None. This session had file tools only.
+
+**Acceptance gate, item by item.**
+
+1. **Met.** `.farm-delta.md` exists with 10 numbered Diagnosis items, each naming
+   a shot path, a screen region and the colors seen there, and an 11 row Changes
+   table. Diagnosis 1, 4 and 6 map to C4, 2 to C1, 3 to C2, 5 to C7, 7 to C5, 8
+   to C6; 9 and 10 are the two Kept rows.
+2. **Met.** Every one of the 11 proof-gone strings returns 0 matches repo-wide
+   outside `.farm-delta.md` and `HANDOFF.md`; every proof-new returns at least 1.
+   Counts are in the delta file's last table.
+3. **Met.** The 24 banned hexes: zero hits under `app/` and `components/`.
+4. **Met.** `fade-up`, `float-y`, `glow-pulse`, `caret-blink`, `pulse-dot`: zero.
+   `@keyframes`: exactly two, `obiter-wipe` and `obiter-stamp`.
+5. **Met.** `role="tablist"`, `animate-pulse`, `--delay`, `--d:`, `rounded-xl`,
+   `rounded-2xl`, `rounded-full`, `backdrop-blur`: zero under `app/` and
+   `components/`.
+6. **Met.** Hex literals: nine in `app/globals.css`, the rest in `app/icon.svg`
+   which CLAUDE.md exempts. Zero under `components/`.
+7. **Met.** `app/layout.tsx:4` imports `Archivo`, `IBM_Plex_Mono` and
+   `Newsreader` from `next/font/google`. The home `Link` holds exactly one
+   `<Image>` and two text spans, and the header renders no second brand image.
+   The JSX is quoted verbatim in `.farm-delta.md`.
+8. **Met.** `IDENTITY.md` lines 1 to 21 are untouched; the only change is one
+   dated line under Amendments.
+9. **Met.** Every DEMO.md contract string still returns a Grep match:
+   `Exception queue`, `The matcher raised`, `autonomy rate of`, `What the engine
+   collected`, `Why this reached you`, `Your decision`, `This applies to`,
+   `Compile a precedent`, `This will close`, `Apply`, `Revert this precedent`,
+   `Pull latest settlement`, `Reset the close`, `Audit trail`, `What has changed
+   while you watched`, `At the start`, `Now`, `Precedent`. `DEMO.md` was not
+   opened for writing and no route file was added under `app/`.
+10. **Met by reading.** Every import in the five edited files resolves to a file
+    in this snapshot, and no import was added or removed. Every `href` on `/` and
+    `/close` is either `/close`, `/close#measures`, `/`, or one of four external
+    URLs (the repo, the SECURITY.md blob, the Devpost page). Whether the two
+    GitHub URLs 200 is a human check.
+11. **Met.** The queue column header is `hidden ... sm:flex` and every fixed
+    width in it mirrors a cell that already carried the same `sm:` variant.
+    `min-h-11` is still on every demo-path button and is on all four new footer
+    links. No `outline-none` was added, and the new global `:focus-visible` rule
+    is the replacement for the links that had none. Both `<Input>` fields are
+    still inside their `<label>`; that block was not touched.
+12. **Met.** `lib/data.ts` was not opened, and `app/page.tsx` and
+    `app/close/page.tsx` still read through `getCloseState()`.
+
+**Acceptance items I could not meet by reading.** Everything that needs a
+command or a browser: `npm install`, `npm run build`, `npm test`, the cold
+private-window pass at 1280, 390 and 360, whether the CTA is actually above the
+fold at each of those widths, the focus rings on tab, Lighthouse, and the seven
+DEMO.md steps at `ADAPTER_MODE=real`. I moved the CTA to the fourth block of the
+page, which is above the fold by construction at 1280 and should be at 390
+because the h1 is `clamp(2.25rem, 5.4vw, 3.4rem)`, but nobody has looked at it.
+
+**Phase 5's findings ledger, carried forward unchanged.**
+
+| # | Finding | Severity | State | Shortest fix path |
+| --- | --- | --- | --- | --- |
+| 1 | `POST /api/close/journal` accepted `{"op":"reset"}` from any origin, and `lib/store.ts:253` deletes every row in `closures`, `live_exceptions` and `precedents` for `CLOSE_ID`. A tab on another site could wipe the close mid-recording. | High | **Fixed** | `sameOriginOk` in `lib/http.ts`, first statement of the handler |
+| 2 | `POST /api/precedent` was anonymous and reaches a paid model. A cross-site page could spend the operator's Anthropic budget in a loop. | Medium | **Fixed** | Same guard, same position |
+| 3 | Every visitor shares one `OBITER_CLOSE_ID`, so one person's "Reset the close" clears rows another person just wrote. The same-origin guard does not touch this: it is two legitimate visitors, not an attacker. | Medium | **Parked** | A close id minted per browser and carried on the request, which makes the reset harmless by construction. Written into `SECURITY.md` as future work |
+| 4 | `buildPrompt` interpolated controller text straight into the model prompt. The real defense was already downstream, in `precedentJsonSchema` and `adoptModelRule`. | Low | **Fixed** | The delimited evidence block and rule 6 in `lib/agent.ts` |
+| 5 | No rate limit on either POST route. An origin-spoofing non-browser client (curl sends no `Origin`, so it passes by design) can still call the compiler as fast as it likes. | Medium | **Parked** | Not in this phase's scope. A per-IP counter in middleware, or Vercel's own rate limiting, is the cheap version. Until then the real bound is `COMPILE_TIMEOUT_MS` 6000 and the operator's own Anthropic spend cap |
+| 6 | `getCloseState()` swallows a store failure and serves the seed, so a misconfigured `DATABASE_URL` looks exactly like a fresh close. Carried from Phase 2. | Low | **Parked** | One line of visible state on the close screen when the store did not answer |
+
+**Open questions, including everything still open from earlier phases.**
+
+1. `postgresStore` has never met a real database. Unchanged since Phase 2.
+2. HANDOFF 3B's ten live compiler runs across all six patterns are still unrun.
+3. The cross-origin 403 check on the deployed URL has not been performed, and
+   `new URL(request.url).host` behind Vercel's proxy is still the one thing that
+   could silently stop every in-app write. The rollback is the two `sameOriginOk`
+   calls.
+4. Findings 3, 5 and 6 above stay parked with their fix paths named.
+5. The Dodo response envelope is still a guess, and the autonomy denominator
+   still grows with pulled settlements.
+6. `app/loading.tsx`'s `HomeSkeleton` now mirrors the previous landing rhythm
+   rather than the new one. Cosmetic, visible only during a slow first paint.
+7. Nobody has seen the new fold rendered. The measurements above are read off the
+   code; the screenshots in the phase brief are all of the previous build.
+
+**Next best step.** Phase 9, the scene pass, should take the first screen at 390
+and 360 in a real browser before anything else: confirm the CTA sits above the
+fold, that the dateline and the state sentence do not push it down, and that the
+queue column header lines up with the rows at exactly the `sm` breakpoint. After
+that the recording, unchanged: the 403 check, then all seven DEMO.md steps at
+`ADAPTER_MODE=real` with a reload between steps 4 and 5.

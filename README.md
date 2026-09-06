@@ -132,6 +132,8 @@ npm install
 npm run dev
 ```
 
+The deployed app is at https://obiter-app.vercel.app and the demo starts at https://obiter-app.vercel.app/close, which is the route DEMO.md step 1 opens on; the landing page at `/` is context for a reader, not part of the recorded flow.
+
 Open http://localhost:3000 and click through to the close queue. Nothing else is required: `ADAPTER_MODE` is `fake` unless you say otherwise, so the compiler replays `fixtures/precedent/` and the settlement feed serves the three fixtures in `lib/dodo.ts`. No key, no network, no local `claude` binary.
 
 To run the real model path:
