@@ -17,7 +17,15 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Primary" className="flex items-center gap-4 text-sm sm:gap-5">
+    // Three links, all one or two words, so they stay laid out as links at every
+    // width. A drawer would put a tap and an animation in front of "Close queue"
+    // on the one device a judge is most likely to open the demo on. flex-wrap is
+    // the small-screen behaviour instead: at 360px the row wraps rather than
+    // pushing the header sideways.
+    <nav
+      aria-label="Primary"
+      className="flex flex-wrap items-center justify-end gap-3 text-sm sm:gap-5"
+    >
       {links.map((link) => {
         const active = pathname === link.href;
         return (
@@ -26,7 +34,7 @@ export function SiteNav() {
             href={link.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "underline-offset-4 hover:underline",
+              "inline-flex min-h-11 items-center underline-offset-4 hover:underline",
               active
                 ? "text-ink underline decoration-seal decoration-2"
                 : "text-muted-foreground"
@@ -38,7 +46,7 @@ export function SiteNav() {
       })}
       <a
         href="https://github.com/mericcintosun/obiter"
-        className="text-muted-foreground underline-offset-4 hover:underline"
+        className="inline-flex min-h-11 items-center text-muted-foreground underline-offset-4 hover:underline"
       >
         Source
       </a>
