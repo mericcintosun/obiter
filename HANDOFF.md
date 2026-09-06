@@ -1231,3 +1231,364 @@ fold, that the dateline and the state sentence do not push it down, and that the
 queue column header lines up with the rows at exactly the `sm` breakpoint. After
 that the recording, unchanged: the 403 check, then all seven DEMO.md steps at
 `ADAPTER_MODE=real` with a reload between steps 4 and 5.
+
+---
+
+### Phase 9, 6 September 2026: the scene pass and the submission package
+
+**Goal.** Two things, in this order. Make `/` read as a funded product rather than
+a text wall: one shared left rule for the masthead, the article and the colophon;
+an oversized figure that breaks the measure; a fold that fits an 844px viewport;
+one sentence plus a visual per section; an illustration family instead of a
+single drawing; and three interactive moments native to an editorial page. Then
+write the submission package, so the project is submittable rather than merely
+built: `SUBMISSION.md`, `docs/VIDEO.md`, a `LICENSE`, and a README carrying the
+real module graph and the deployed addresses. No demo step was added, no route
+was added, and `DEMO.md` was not opened for writing.
+
+**Status.** All six slices done. Nothing was cut. **Not verified by me: nothing in
+this phase was executed, because this session had Write, Edit, Read, Glob and
+Grep only.** `npm install`, `npm run build`, `npm test` and the browser are all
+unrun. The nine before shots were read with the Read tool and every measurement
+in `.farm-delta.md` comes off those images. Every grep below was run with the
+Grep tool and its count is real. Everything about how the page looks *after* the
+change is reasoning from the code, not from a screenshot, because I could not
+take one.
+
+**What changed on screen.**
+
+- **One measure, one left rule.** `app/page.tsx` is now
+  `mx-auto max-w-5xl px-5 pt-12 pb-4`, the same shell width as the masthead and
+  the colophon in `app/layout.tsx`, and every prose block inside it carries the
+  new `.obiter-measure` (68ch, left aligned). At 1440 the brand, the argument and
+  the footer all begin at the same x. Before this the article was a centered
+  `max-w-[68ch]` column starting 199px inboard of the header on both sides.
+- **The plate.** `components/plate.tsx` is the one figure component on the route.
+  It breaks the measure to the shell's full width, keeps `next/image` with
+  `unoptimized`, explicit `width`/`height` and real alt text, and closes its
+  caption under a hairline (`.obiter-plate-caption`). Five plates: the existing
+  ledger drawing in the fold, then one each for the compiler, the record, the
+  feed and the architecture.
+- **The fold.** The lede went from four sentences and seven lines at 390 to two
+  sentences, the h1 clamp floor from `2.25rem` to `2.05rem`, three vertical gaps
+  from `mt-7`/`mt-5` to `mt-6`/`mt-4`, and the CTA's supporting line from two
+  sentences to one clause. The order is unchanged: kicker, h1, ink lede,
+  dateline, the live state sentence, CTA, figure.
+- **Six sections, one sentence and one visual each.** Section 1 is the residue
+  plus the pattern sparkline, 2 the compiler plus its plate, 3 the object plus
+  the mono JSON block, 4 the record plus the audit and revert plate, 5 the feed
+  plus the settlement plate, 6 the build plus the architecture plate. The three
+  paragraph "How the compiler is wired" disclosure is gone; its content is now
+  the single sentences of sections 2 and 5. Section 4 keeps a second sentence,
+  the only one on the page, because it carries the `/close#measures` link that
+  phase 4's gate requires.
+- **The build ledger.** Agent Orchestrator, Claude and Dodo Payments stay visible
+  in that order, AO first. Zod and Next.js/TypeScript moved behind a one line
+  `<details>` on `.obiter-build-more`.
+- **The colophon.** The footer lost 32px of empty ground (`mt-24` to `mt-16`) and
+  its two standing paragraphs became one sentence on `.obiter-colophon`, still
+  carrying all three phase 5 facts: the repo link, the `SECURITY.md` link, and
+  that the close is fictional with no customer or payment data stored.
+
+**The three interactive moments, and where each number comes from.**
+
+1. **`components/counted-figure.tsx`.** The autonomy figure in the fold's state
+   sentence counts to its real value over 600ms on mount. `useState` is seeded
+   with the real value, so the server HTML and the first client render both carry
+   61 and a reader with no JavaScript sees the number, not a zero. The effect
+   returns early when `prefers-reduced-motion: reduce` matches. The value is
+   `baseline`, computed in `app/page.tsx` from `closeSummary` off
+   `getCloseState()`. No literal anywhere in the component.
+2. **`components/section-entrance.tsx`.** An `IntersectionObserver` adds the
+   existing `.obiter-wipe` class to a section when it arrives. It adds no
+   keyframe, no duration, no easing and no inline delay; the animation is the M4
+   clip-path wipe already in `app/globals.css`, already disabled by the
+   `prefers-reduced-motion` block there. Content is always in the server HTML: if
+   the observer is missing the section is simply marked entered, never hidden.
+3. **`components/pattern-sparkline.tsx`.** A hairline inline SVG with one point
+   per pattern, height proportional to open rows. `app/page.tsx` walks
+   `getCloseState().open`, builds the pattern order from the seed's first
+   appearance so a cleared pattern keeps its column, counts the rows still open
+   after the journal's closures, and passes the six counts in as props. Nothing
+   is hardcoded and the component fetches nothing. The SVG is `aria-hidden` and
+   the ruled list under it carries the same six numbers as text, so a screen
+   reader gets them once.
+
+**The illustration family.** `public/illustrations/` now holds five files:
+`ledger-rule.svg` from an earlier phase plus `precedent-compile.svg`,
+`audit-revert.svg`, `settlement-close.svg` and `architecture.svg`. All four new
+ones are hand authored, strict XML with a `viewBox` on the root, every attribute
+quoted and no double hyphen inside any comment, in the same terms as the existing
+file: `#f3ecdf` ground, `#e9e0cd` hairlines, `#221d16` ink shapes, `#2d4fd1` only
+where a precedent seal is meant, `#2e5c3a` only for closed states, flat, no
+gradient, no glow. Each is rendered by `Plate` at a named call site in
+`app/page.tsx`; the asset to call-site table is in `.farm-delta.md`.
+
+**Meshy was not used, and this is the honest reason.** `mcp__meshy__*` is present
+in this session's tool list. It was not called. Every generation tool there
+returns a 3D mesh or a raster image and none of them emits SVG, which is what a
+hairline family has to be to hold a 1px `#e9e0cd` rule at 360 and at 1440; and
+each call costs credits that need a confirmation this non interactive session
+cannot obtain. That is the silent downgrade to hand authored SVG the brief allows,
+recorded here rather than left to be guessed at. The page does not depend on
+Meshy existing.
+
+**Decisions.**
+
+1. **The shell is `max-w-5xl` and the measure is a class, not a wrapper.** The
+   alternative was a nested `max-w-[68ch]` div inside a `max-w-5xl` article,
+   which would have made the plate a negative margin trick. Putting the measure
+   on each prose block instead means the plate needs no escape hatch: it simply
+   does not carry the class. That is why `.obiter-measure` appears twenty times
+   in `app/page.tsx` and why that is the right number rather than a smell.
+2. **The standalone `<div className="obiter-rule mt-10" />` under the fold figure
+   is gone.** With the plate caption now sitting under its own hairline, keeping
+   it would have put three rules within 120px: the caption rule, the standalone
+   rule, and section 1's running head border. Phase 8 decision 1 already said two
+   hairlines separated by whitespace read as noise, and this is the same call one
+   rule later.
+3. **The sparkline's SVG is `aria-hidden` and the list under it is the content.**
+   An `aria-label` naming six counts would have been announced immediately before
+   a list announcing the same six counts. The drawing is the glance version and
+   the list is the audited version, which is the same split the close screen makes
+   between the meter and the measures panel.
+4. **A sixth section was added rather than doubling up a fifth.** The brief names
+   four homes for the four new assets: the compiler, the audit trail and revert,
+   the settlement, and the architecture. With five sections one of them would have
+   carried two plates and two sentences, which is exactly the wall this phase is
+   removing. A sixth running head costs one line and the page is still shorter
+   than it was, because three two-paragraph sections became one sentence each and
+   a three paragraph disclosure was deleted outright.
+5. **`SectionEntrance` renders a `<section>` and nothing else configurable.** The
+   sparkline's stroke reveals under its section's wipe rather than under a wipe of
+   its own, because a second `.obiter-wipe` nested inside the first would have
+   fired at page load and been over before the reader scrolled to it. One wipe per
+   section, left to right, is the signature.
+6. **The count-up seeds state with the real value and animates down and back.**
+   The other order, seeding 0 and counting up, renders a zero into the server HTML
+   and shows it to anyone whose JavaScript did not run. On a page whose whole
+   claim is that the numbers are real, a zero in the HTML is the wrong failure.
+7. **N5's proof-gone string was changed mid-pass.** The obvious choice, `The
+   seeded close in this repo is a fair example`, is also a prose sentence in
+   `README.md:30` and would have failed the zero-hit check for a reason unrelated
+   to rendering code. It was narrowed to the longer form that only ever existed in
+   `app/page.tsx`. The substitution is written into `.farm-delta.md` rather than
+   left silent.
+8. **The illustrations ride the first commit.** `app/page.tsx` references them by
+   URL, not by import, so a commit ordering mistake there would be a 404 rather
+   than a build failure; the components ride the second, before the page that
+   imports them, so every commit in `.farm-commits.json` leaves a tree whose
+   imports resolve.
+9. **No dependency, no route, no env key, no schema change, and `lib/` was not
+   opened for writing.** `lib/data.ts` was read to count the six patterns and was
+   not edited.
+
+**Failed attempts.** None. No edit needed a second correction. Read that as
+"untested", not as "clean": nothing here was executed.
+
+**Files changed.**
+
+Created: `components/plate.tsx`, `components/section-entrance.tsx`,
+`components/counted-figure.tsx`, `components/pattern-sparkline.tsx`,
+`public/illustrations/precedent-compile.svg`,
+`public/illustrations/audit-revert.svg`,
+`public/illustrations/settlement-close.svg`,
+`public/illustrations/architecture.svg`, `LICENSE`, `SUBMISSION.md`,
+`docs/VIDEO.md`, `.farm-commits.json`.
+
+Edited: `.farm-delta.md` (rewritten for this phase), `app/globals.css` (four new
+token-only classes appended; the nine hexes, the two keyframes and the
+reduced-motion block are untouched), `app/page.tsx` (rewritten), `app/layout.tsx`
+(the footer's top margin and its standing paragraphs only; the masthead block was
+not opened), `IDENTITY.md` (one dated Amendments line), `README.md` (the deployed
+addresses table, the mermaid architecture section, the AI use section, the
+LICENSE pointer), `HANDOFF.md`.
+
+Untouched on purpose: `DEMO.md` (the seven steps and the route table are the
+contract), `DELIVERY.md`, `SECURITY.md`, `CLAUDE.md`, `components/close-queue.tsx`,
+`components/close-measures.tsx`, `components/site-nav.tsx`, `components/ui/*`,
+`app/close/*`, `app/api/*`, `app/icon.svg`, `app/opengraph-image.png`,
+`app/loading.tsx`, `app/error.tsx`, `app/not-found.tsx`, `lib/*`, `fixtures/*`,
+`drizzle/*`, `scripts/*`, `tests/*`, `public/brand/*`, `public/__farm.txt`,
+`public/illustrations/ledger-rule.svg`, `.env.example`, `.gitignore`,
+`package.json`.
+
+**Commands run.** None. This session had Write, Edit, Read, Glob and Grep only.
+
+**Acceptance gate, item by item, checked by reading and by grep.**
+
+1. **Met.** `.farm-delta.md` has 6 numbered Diagnosis items, each naming a shot
+   path, a screen region with pixel coordinates, the colors seen there and the
+   source line, and a 10 row Changes table. Diagnosis 1 maps to N1, 2 to N2, 3 to
+   N4 and N5 and N6, 4 to N3 and N4, 5 to N10, 6 to N7. Two Kept rows.
+2. **Met.** Every one of the 10 proof-gone strings returns 0 matches repo-wide
+   outside `.farm-delta.md` and `HANDOFF.md`; every proof-new returns at least 1.
+   The counts are in the delta file's last table.
+3. **Met.** The 24 banned hexes, `fade-up`, `float-y`, `glow-pulse`,
+   `caret-blink`, `pulse-dot`, `role="tablist"`, `animate-pulse`, `backdrop-blur`,
+   `rounded-xl`, `rounded-2xl`, `rounded-full`, `--delay`, `--d:` and `mask-image`
+   all return **zero** hits under `app/` and `components/`, case insensitive.
+4. **Met.** `@keyframes` returns exactly two repo-wide, `obiter-wipe` at
+   `app/globals.css:225` and `obiter-stamp` at `:236`, and the
+   `prefers-reduced-motion: reduce` block at `:275` still sets `animation: none`
+   on both.
+5. **Met.** `app/layout.tsx:4` imports `Archivo`, `IBM_Plex_Mono` and
+   `Newsreader` from `next/font/google`. Hex literals under `app/` and
+   `components/`: exactly the nine in `app/globals.css` lines 8 to 16, plus
+   `app/icon.svg`, which CLAUDE.md exempts. Zero under `components/`.
+6. **Met.** The header brand link holds exactly one `<Image>` and the header
+   renders no second brand image. The JSX is quoted verbatim at the end of
+   `.farm-delta.md`. That block was not opened this phase.
+7. **Met.** Five files under `public/illustrations/`, each rendered by `Plate` at
+   a named call site; the table is in `.farm-delta.md`. Every new SVG has a
+   `viewBox` on the root, quoted attributes, and no `-` `-` pair inside any XML
+   comment.
+8. **Met.** The three moments exist, are L3 native, and every number traces to
+   `lib/data.ts` through `getCloseState()`. The per-moment seed source is in
+   `.farm-delta.md` and in the numbered list above.
+9. **Met.** Every phase 8 proof-gone string returns zero repo-wide outside
+   `.farm-delta.md` and this file. The one hit anywhere is
+   `h-[26px] w-[26px] object-contain` at `HANDOFF.md:66`, which is inside the
+   excluded file and is the phase 1 quotation of the old header.
+10. **Met.** `IDENTITY.md` lines 1 to 21 are byte unchanged; the only change is
+    one new dated line at the top of the Amendments list.
+11. **Met.** `README.md` carries the deployed addresses table with the live URL,
+    the demo start route, the repo and a video row holding the literal
+    `<ADD_VIDEO_URL>`; the mermaid diagram of the real modules; the sharpened AI
+    use section with both rules-page quotes; and a `LICENSE` pointer. The bounty
+    table is byte unchanged. Quickstart is two commands. No image file is
+    referenced. `SUBMISSION.md` covers every form field in order and
+    `docs/VIDEO.md` is the shot list. A repo-wide case-insensitive grep for
+    `video is pending`, `video pending`, `to be added`, `not yet recorded`,
+    `coming soon` and `TBD` returns **zero** hits in prose. The only two lines it
+    matches at all are these two, which name the strings being searched for.
+12. **Met by reading.** Every import in every file touched resolves to a file in
+    this snapshot: `@/components/{plate,section-entrance,counted-figure,pattern-sparkline}`,
+    `@/components/ui/{button,card}`, `@/lib/adapters`, `@/lib/data`, `@/lib/utils`,
+    `next/link` and `next/image` all exist. `lib/data.ts` was not edited, so `/`
+    and `/close` are still non-empty. No route file was added.
+    `public/__farm.txt` and the phase 5 `sameOriginOk` guards were not opened.
+
+**Acceptance items I could not meet, stated plainly.**
+
+1. **Everything that needs a command or a browser.** `npm install`,
+   `npm run build`, `npm test`, Lighthouse, the focus rings on tab, the cold
+   private-window pass at 1280, 390 and 360, and the seven DEMO.md steps at
+   `ADAPTER_MODE=real`. None of them has been run by anyone.
+2. **The 390 and 360 fold fit is computed, not observed.** From
+   `before-mobile-fold.png` the supporting sentence started at y 836 and was cut
+   by the 844 line. The cuts in this phase remove roughly three lines of lede at
+   33px each, about 10px from the h1's three lines, 12px of vertical gap and one
+   line of the supporting sentence, which should put its last line near y 740 at
+   390. At 360 the text rewraps and eats some of that headroom back. I believe it
+   fits at both widths and **nobody has looked**, so treat it as the first item on
+   the human list, not as done.
+3. **The wipe's `both` fill mode leaves `clip-path: inset(0 0 0 0)` on each
+   section after it finishes.** That clips to the border box, so nothing visible
+   is cut, but it does establish a containing block. No section has a `position:
+   fixed` descendant today. If a later phase puts one inside a `SectionEntrance`,
+   this is the line to remember.
+4. **`app/loading.tsx`'s `HomeSkeleton` now mirrors the landing rhythm even less
+   well than it did after phase 8**, because the section count and the measure
+   both changed. It is a loading branch on a force-dynamic route and rewriting it
+   would have cost fold time. Written here rather than fixed.
+5. **The video shot list's timings are a plan, not a measurement.** The table
+   totals 3:17 on paper. Whether shot 5 actually needs 22 seconds is something the
+   dry run in `docs/VIDEO.md` slot 1 answers.
+
+**Phase 5's findings ledger, carried forward unchanged.**
+
+| # | Finding | Severity | State | Shortest fix path |
+| --- | --- | --- | --- | --- |
+| 1 | `POST /api/close/journal` accepted `{"op":"reset"}` from any origin, and `lib/store.ts:253` deletes every row in `closures`, `live_exceptions` and `precedents` for `CLOSE_ID`. A tab on another site could wipe the close mid-recording. | High | **Fixed** | `sameOriginOk` in `lib/http.ts`, first statement of the handler |
+| 2 | `POST /api/precedent` was anonymous and reaches a paid model. A cross-site page could spend the operator's Anthropic budget in a loop. | Medium | **Fixed** | Same guard, same position |
+| 3 | Every visitor shares one `OBITER_CLOSE_ID`, so one person's "Reset the close" clears rows another person just wrote. The same-origin guard does not touch this: it is two legitimate visitors, not an attacker. | Medium | **Parked** | A close id minted per browser and carried on the request, which makes the reset harmless by construction. Written into `SECURITY.md` as future work |
+| 4 | `buildPrompt` interpolated controller text straight into the model prompt. The real defense was already downstream, in `precedentJsonSchema` and `adoptModelRule`. | Low | **Fixed** | The delimited evidence block and rule 6 in `lib/agent.ts` |
+| 5 | No rate limit on either POST route. An origin-spoofing non-browser client (curl sends no `Origin`, so it passes by design) can still call the compiler as fast as it likes. | Medium | **Parked** | Not in this phase's scope. A per-IP counter in middleware, or Vercel's own rate limiting, is the cheap version. Until then the real bound is `COMPILE_TIMEOUT_MS` 6000 and the operator's own Anthropic spend cap |
+| 6 | `getCloseState()` swallows a store failure and serves the seed, so a misconfigured `DATABASE_URL` looks exactly like a fresh close. Carried from Phase 2. | Low | **Parked** | One line of visible state on the close screen when the store did not answer |
+
+**Open questions, including everything still open from earlier phases.**
+
+1. **`postgresStore` has never met a real database.** Unchanged since Phase 2.
+   The SQL in `drizzle/0000_init.sql` and the drizzle schema in
+   `lib/db/schema.ts` were written by hand and kept in step by eye, and the first
+   `npm run db:push` is the first time either is tested.
+2. **HANDOFF 3B's ten live compiler runs across all six patterns are still
+   unrun.** `adoptModelRule` bounds the tolerance now, but nobody has watched a
+   real model try to widen a scope ten times in a row.
+3. **The cross-origin 403 check on the deployed URL has not been performed**, and
+   `new URL(request.url).host` behind Vercel's proxy is still the one thing that
+   could silently stop every in-app write. The rollback is deleting the two
+   `sameOriginOk` calls, one in each POST handler, and it costs a minute.
+4. Findings 3, 5 and 6 above stay parked with their fix paths named.
+5. The Dodo response envelope is still a guess, and the autonomy denominator still
+   grows with pulled settlements.
+6. Nobody has seen this phase's page rendered. Everything in "What changed on
+   screen" is read off the code; the nine shots in the phase brief are all of the
+   previous build.
+7. `console.` is still not zero under `app/`: nine hits, all server-side logs in
+   the three route handlers, all of them ids, counts and timings. Phases 4 and 5
+   left them deliberately and this phase did not open those files.
+
+**Next best step.** Nothing in this repo is the bottleneck any more. The two
+things standing between it and a submission are both human: the recording, and
+the form. In order:
+
+1. `npm install && npm run build && npm test`. Nothing across phases 1 to 9 has
+   been executed by anyone.
+2. Open `/` in a cold private window at 1280, 390 and 360 and confirm the CTA and
+   its supporting sentence both clear the fold, then scroll to each section and
+   confirm the entrances fire and the sparkline draws.
+3. Post to `/api/close/journal` from another page's console on the deployed URL
+   and confirm the 403.
+4. Walk all seven `DEMO.md` steps at `ADAPTER_MODE=real` with a reload between
+   steps 4 and 5, three clean takes.
+5. Record against `docs/VIDEO.md`, then fill `<ADD_VIDEO_URL>` and
+   `<ADD_TEAM_MEMBER_NAMES>` in both `README.md` and `SUBMISSION.md`.
+
+---
+
+## 7. The manual submit checklist
+
+Everything below is a human action. Nothing in the repo can do any of it.
+
+**Before the recording**
+
+- [ ] `npm install`, `npm run build` with zero TypeScript errors, `npm test` green.
+- [ ] Vercel redeploy is live, and all five files under `/illustrations/` return
+      200 on `https://obiter-app.vercel.app`.
+- [ ] `npm run demo:reset`, and `/close` shows 24 open exceptions at 61 percent.
+- [ ] `ADAPTER_MODE=real` and a live `ANTHROPIC_API_KEY` are set on the machine
+      that records.
+- [ ] The cold private-window pass at 1280, 390 and 360 is done and the CTA clears
+      the fold at all three.
+- [ ] The cross-origin 403 check on the deployed URL is done.
+
+**The recording**
+
+- [ ] Follow `docs/VIDEO.md`. Dry run first, capture the fallback stills, then take one.
+- [ ] **Shot 8, the AO dashboard with the total session count legible on screen.**
+      Eliminatory. If it is not in the cut, all ten prize rows fall.
+- [ ] **Shot 7, the measured result panel at `/close#measures`.** The left column
+      must read 24, 38 of 62, 61 percent, 0.
+- [ ] Total runtime between 3:00 and 4:00, hard under 5:00.
+- [ ] No API key, no `.env.local` and no terminal scrollback with a key in frame.
+
+**The form**
+
+- [ ] Replace `<ADD_VIDEO_URL>` in `README.md` and `SUBMISSION.md`.
+- [ ] Replace `<ADD_TEAM_MEMBER_NAMES>` in `README.md` and `SUBMISSION.md`, and
+      list every member on the form itself.
+- [ ] Select exactly `Track 2 - Autonomous Office of the CFO`. No Track 1 row.
+- [ ] Paste the live URL `https://obiter-app.vercel.app`, the demo start
+      `https://obiter-app.vercel.app/close`, and the repo
+      `https://github.com/mericcintosun/obiter`.
+- [ ] Paste the elevator pitch from `SUBMISSION.md` section 2 and confirm the form
+      accepts it under its 200 character cap.
+- [ ] Paste the project description from `SUBMISSION.md` section 4.
+- [ ] Confirm on the form whether resubmission is allowed **before** you submit.
+      The registry record says it is not.
+- [ ] Read the form's own eligibility text. The landing page and the rules page
+      contradict each other on the student restriction and on company entries.
+- [ ] Submit before **18:00 EDT on Sunday 6 September 2026**. That is the earlier
+      of the two stated deadlines and it binds.

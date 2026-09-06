@@ -2,11 +2,22 @@
 
 **The controller resolves one reconciliation exception. Obiter compiles that decision into a named rule and closes every matching exception in the queue, with the precedent stamped on each record and one click to take it all back.**
 
-> Live demo: https://obiter-app.vercel.app
->
-> Video: `<ADD_VIDEO_URL>`
+## Deployed addresses
+
+| What | Where |
+| --- | --- |
+| Live app | https://obiter-app.vercel.app |
+| Demo start route | https://obiter-app.vercel.app/close |
+| Measured result panel | https://obiter-app.vercel.app/close#measures |
+| Repository | https://github.com/mericcintosun/obiter |
+| Demo video | `<ADD_VIDEO_URL>` |
+
+There is no `contracts/` directory, no chain and no wallet in this repo, so there
+is no contract address row and no on-chain smoke script. The close journal is the
+only mutable state Obiter has, and `npm run demo:reset` puts it back.
 
 Built for **Syndicate by Maximor**, Track 2, Autonomous Office of the CFO.
+Licensed under [MIT](LICENSE).
 
 `ADAPTER_MODE` decides which compiler runs behind `lib/adapters.ts`. It defaults to `fake`, which compiles the precedent from the checked-in answers in `fixtures/precedent/` with no API key and no network, so the whole demo path is clickable on a laptop with no accounts. Set `ADAPTER_MODE=real` to run the live Claude chain in `lib/agent.ts` instead. Both modes hand their answer to the same Zod validation in `lib/precedent.ts`, so the offline path exercises the guard rail rather than skipping it.
 
@@ -119,6 +130,51 @@ Three bounds, all in the real path, all there because the recording is the deliv
 
 **The settlement feed picks money that can actually close.** `fetchLatestSettlement` in `lib/dodo.ts` asks Dodo for a page of ten succeeded payments rather than the single newest one, and `pickSettlement` walks the ones `usableForDemo` accepts: an invoice number that is not an `INV-UNMAPPED` placeholder, and a positive shortfall, because a payment that is not short cannot demonstrate a precedent closing it. A second and third pull return different money. When the page holds nothing usable, the fixture in the same file answers and one line goes to the server log saying so.
 
+## Architecture
+
+Every box below is a file in this repo. The seam in the middle is the only thing
+a page or a route is allowed to talk to, which is what makes the offline path and
+the live path the same code with a different answer behind it.
+
+```mermaid
+flowchart LR
+  seed["lib/data.ts<br/>the August 2026 seed<br/>24 open, 62 raised, no imports"]
+  dodo["lib/dodo.ts<br/>settlement feed<br/>Dodo test mode or 3 fixtures"]
+  adapters["lib/adapters.ts<br/>the seam<br/>switched by ADAPTER_MODE"]
+  agent["lib/agent.ts<br/>compiler chain<br/>Anthropic, then the claude CLI"]
+  fake["lib/fake-compiler.ts<br/>replays fixtures/precedent/"]
+  precedent["lib/precedent.ts<br/>Zod rule schema<br/>adoptModelRule, the executor"]
+  store["lib/store.ts<br/>the close journal<br/>memoryStore or postgresStore"]
+  rprec["app/api/precedent<br/>POST, compiles one decision"]
+  rsett["app/api/settlements<br/>GET, pulls one settlement"]
+  rjour["app/api/close/journal<br/>POST, the only write"]
+  home["app/page.tsx<br/>the landing page"]
+  close["app/close/page.tsx<br/>the close queue"]
+
+  seed --> adapters
+  dodo --> adapters
+  adapters --> agent
+  adapters --> fake
+  agent --> precedent
+  fake --> precedent
+  adapters --> store
+  rprec --> adapters
+  rsett --> adapters
+  rjour --> store
+  home --> adapters
+  close --> adapters
+  close -.->|"fetch"| rprec
+  close -.->|"fetch"| rsett
+  close -.->|"fetch"| rjour
+```
+
+Two rules hold that graph together. `lib/precedent.ts` is the only place a rule
+is validated, so the live model answer, the replayed fixture and the
+deterministic draft all pass through the same `adoptModelRule` guard. And
+`lib/store.ts`, `lib/agent.ts`, `lib/db/*` and `lib/config.ts` are never imported
+by a page or a `"use client"` file: every consumer reaches them through
+`lib/adapters.ts` or an API route.
+
 ## Tech stack
 
 Next.js 15 App Router, TypeScript in strict mode, Tailwind CSS v4, shadcn primitives, Zod for rule validation and at every route edge, Drizzle over Postgres on Neon for the close ledger, Claude for the one compilation step, Dodo Payments test mode for the settlement feed, Vitest for the pinned demo test, deployed on Vercel.
@@ -182,9 +238,38 @@ With no `DATABASE_URL`, the close journal lives in the in-process store in `lib/
 - Per-precedent hit rate over time, so a rule that starts closing things it should not is visible before an auditor finds it.
 - Export the precedent set as a reviewable diff for the auditor, which is the artifact an accounting firm would actually want.
 
-## AI use
+## AI use, and the eligibility requirement behind it
 
-We used AI coding assistants for scaffolding and boilerplate. Architecture, product decisions, and final code review are our own. The product itself calls Claude at one point in its runtime, documented above under the compiler fallback chain. Adjust this section to match the disclosure rules of whichever event this is submitted to.
+The rules page states two things this section answers directly:
+
+> "AO usage is mandatory for eligibility and will be verified through the submission and demo"
+
+> "Each project may enter only one track"
+
+**This project entered Track 2, Autonomous Office of the CFO, and claims no Track 1 row.**
+
+**AO (Agent Orchestrator) during the build.** The work ran as an orchestrator
+session with the matching engine, the precedent compiler, the close interface and
+the seed pipeline each split into their own worker session. That is a process
+fact, not a runtime dependency: there is no AO API call anywhere in this
+repository, and the proof the rules page asks for is the AO dashboard with the
+total session count on screen in the demo video, which is shot 2 in
+[`docs/VIDEO.md`](docs/VIDEO.md). Do not describe an AO call on camera, because
+there is not one.
+
+**AI assistants during the build.** AI coding assistants were used throughout,
+for scaffolding, for boilerplate and for drafting. Architecture, product
+decisions and the final read of the code are ours, and the commit history is
+granular on purpose because the rules allow organisers to inspect it.
+
+**Claude at runtime.** The product calls Claude at exactly one point: the
+precedent compiler in `lib/agent.ts`, once per controller decision, with the
+precedent JSON schema handed over as a tool definition. Nothing else in the
+running app calls a model. Every closure after that compile is executed by the
+deterministic matcher in `lib/precedent.ts`, which is why the same queue always
+produces the same result.
+
+This repository is MIT licensed. See [`LICENSE`](LICENSE).
 
 ## Team
 
