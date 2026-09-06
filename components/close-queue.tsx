@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { CloseMeasures } from "@/components/close-measures";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -133,7 +134,7 @@ function QueueErrorState({ message, onRetry }: { message: string; onRetry: () =>
           <span className="font-medium text-bad">Something failed. </span>
           {message}
         </p>
-        <Button size="sm" variant="outline" className="mt-3" onClick={onRetry}>
+        <Button size="sm" variant="outline" className="mt-3 min-h-11 px-3" onClick={onRetry}>
           Try that again
         </Button>
       </CardContent>
@@ -154,7 +155,7 @@ function QueueEmptyState({ onPull }: { onPull: () => void }) {
         Every open exception in this close is covered by a precedent. Pull a settlement to see
         what happens to money that arrives now, or revert a precedent to put its records back.
       </p>
-      <Button variant="outline" className="mt-5" onClick={onPull}>
+      <Button variant="outline" className="mt-5 min-h-11" onClick={onPull}>
         Pull latest settlement
       </Button>
     </div>
@@ -208,6 +209,16 @@ export function CloseQueue({
   const humanTouches = Object.values(statuses).filter(
     (s) => s.state === "closed" && s.byHuman
   ).length;
+
+  // The left column of the measures panel: where this close stood before anyone
+  // opened the screen. `initialQueue` is the seeded queue with the persisted
+  // settlements already taken out by app/close/page.tsx, so its length is the 24
+  // that DEMO.md step 1 opens on, whatever the journal has done since.
+  const seededOpenCount = initialQueue.length;
+  const baselineClosures = summary.closedByCarriedPrecedents;
+  const baselineAutonomy = Math.round(
+    (summary.closedByCarriedPrecedents / summary.exceptionsRaised) * 100
+  );
 
   const flash = useCallback((ids: string[]) => {
     setJustChanged(ids);
@@ -460,10 +471,15 @@ export function CloseQueue({
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Button variant="outline" onClick={pullSettlement} disabled={phase === "pulling"}>
+        <Button
+          variant="outline"
+          className="min-h-11"
+          onClick={pullSettlement}
+          disabled={phase === "pulling"}
+        >
           {phase === "pulling" ? "Pulling settlement..." : "Pull latest settlement"}
         </Button>
-        <Button variant="ghost" onClick={resetClose}>
+        <Button variant="ghost" className="min-h-11" onClick={resetClose}>
           Reset the close
         </Button>
       </div>
@@ -494,12 +510,18 @@ export function CloseQueue({
                 <h2 className="mt-1 text-xl">{inspected.name}</h2>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setInspecting(null)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="min-h-11 px-3"
+                  onClick={() => setInspecting(null)}
+                >
                   Close
                 </Button>
                 <Button
                   size="sm"
                   variant="destructive"
+                  className="min-h-11 px-3"
                   disabled={phase === "reverting"}
                   onClick={() => revertPrecedent(inspected.id)}
                 >
@@ -528,6 +550,18 @@ export function CloseQueue({
           </CardContent>
         </Card>
       ) : null}
+
+      <CloseMeasures
+        raised={raised}
+        baselineClosures={baselineClosures}
+        baselineAutonomy={baselineAutonomy}
+        autonomousClosures={autonomousClosures}
+        autonomy={autonomy}
+        humanTouches={humanTouches}
+        openCount={openQueue.length}
+        seededOpenCount={seededOpenCount}
+        precedentsWrittenToday={precedents.length}
+      />
 
       <div className="obiter-rule mt-10" />
 
@@ -584,7 +618,7 @@ export function CloseQueue({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="rounded-none px-2"
+                    className="min-h-11 rounded-none px-2"
                     onClick={() => setInspecting(status.precedentId)}
                   >
                     <Badge variant="seal" className={cn(changed && "obiter-stamp")}>
@@ -622,6 +656,7 @@ export function CloseQueue({
                       <Button
                         key={choice}
                         size="sm"
+                        className="min-h-11 px-3"
                         variant={action === choice ? "default" : "outline"}
                         onClick={() => setAction(choice)}
                       >
@@ -638,6 +673,7 @@ export function CloseQueue({
                       <Button
                         key={level}
                         size="sm"
+                        className="min-h-11 px-3"
                         variant={scopeLevel === level ? "default" : "outline"}
                         onClick={() => setScopeLevel(level)}
                       >
@@ -658,10 +694,10 @@ export function CloseQueue({
                         min="0"
                         value={tolerance}
                         onChange={(event) => setTolerance(event.target.value)}
-                        className="mt-1 w-32"
+                        className="mt-1 w-32 max-w-full"
                       />
                     </label>
-                    <label className="block min-w-[16rem] flex-1">
+                    <label className="block min-w-[16rem] max-w-full flex-1">
                       <span className="obiter-label">Reason for the file (optional)</span>
                       <Input
                         value={rationale}
@@ -673,7 +709,11 @@ export function CloseQueue({
                   </div>
 
                   <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <Button onClick={compile} disabled={phase === "compiling"}>
+                    <Button
+                      className="min-h-11"
+                      onClick={compile}
+                      disabled={phase === "compiling"}
+                    >
                       {phase === "compiling" ? "Compiling the precedent..." : "Compile a precedent"}
                     </Button>
                     <span className="text-sm text-muted-foreground">
@@ -729,10 +769,18 @@ export function CloseQueue({
                         </p>
 
                         <div className="mt-4 flex flex-wrap gap-3">
-                          <Button onClick={applyProposal} disabled={phase === "applying"}>
+                          <Button
+                            className="min-h-11"
+                            onClick={applyProposal}
+                            disabled={phase === "applying"}
+                          >
                             Apply {proposal.rule.id} to the queue
                           </Button>
-                          <Button variant="outline" onClick={() => setProposal(null)}>
+                          <Button
+                            variant="outline"
+                            className="min-h-11"
+                            onClick={() => setProposal(null)}
+                          >
                             Discard
                           </Button>
                         </div>

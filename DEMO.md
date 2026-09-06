@@ -29,7 +29,7 @@ Autonomy is a number computed from the queue on screen, not a slide.
 **`/close`** (`app/close/page.tsx`). The video opens there. The landing page at
 `/` (`app/page.tsx`) is context for a reader, not part of the recorded flow.
 
-## The six steps
+## The seven steps
 
 1. **The queue and the autonomy meter.** Route file `app/close/page.tsx`,
    rendering `components/close-queue.tsx`. On screen: the heading "Exception
@@ -72,6 +72,16 @@ Autonomy is a number computed from the queue on screen, not a slide.
    Northwind Freight BV, invoice INV-2026-0791, short by $1.29, arriving already
    closed under PREC-03, and the audit trail line "EXC-0901 arrived from the
    settlement feed and closed under PREC-03. No human touched it."
+
+7. **Read the measured result.** Scroll to the section headed "What has changed
+   while you watched", which sits between the audit trail and the queue list. Route file `app/close/page.tsx`, rendering
+   `components/close-measures.tsx` through the queue. On screen: four ruled rows
+   with the close as it was opened in the left column, reading 24, 38 of 62, 61
+   percent, and 0, and the right column carrying whatever the queue on screen
+   currently shows, in forest where the line improved. This step adds no route
+   and no request; the numbers are the same ones the meter above was computed
+   from, printed as a before and after so a judge can check the README table
+   against the screen.
 
 ## Routes this demo is allowed to use
 
