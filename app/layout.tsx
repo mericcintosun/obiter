@@ -25,7 +25,10 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://obiter.vercel.app"),
+  // The deployed host, not the project name. Every relative metadata URL is
+  // resolved against this, including the og:image that app/opengraph-image.png
+  // produces by file convention, so a wrong host here is a 404 in the card.
+  metadataBase: new URL("https://obiter-app.vercel.app"),
   title: {
     default: "Obiter, a case reporter for the month-end close",
     template: "%s | Obiter",
@@ -37,6 +40,12 @@ export const metadata: Metadata = {
     description:
       "Resolve one reconciliation exception. Obiter compiles the decision into a named rule and applies it to the rest of the queue.",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Obiter, a case reporter for the month-end close",
+    description:
+      "Resolve one reconciliation exception. Obiter compiles the decision into a named rule and applies it to the rest of the queue.",
   },
 };
 

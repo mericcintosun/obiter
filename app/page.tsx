@@ -102,12 +102,22 @@ export default async function Home() {
       </p>
 
       <div className="mt-8">
-        <Button size="lg" asChild>
+        <Button size="lg" className="min-h-11" asChild>
           <Link href="/close">Open the August 2026 close queue</Link>
         </Button>
         <p className="mt-3 text-sm text-muted-foreground">
           {open} open exceptions across six patterns, seeded and ready. No sign in, no keys
           needed.
+        </p>
+        <p className="mt-4 max-w-[68ch] leading-relaxed">
+          The close screen now carries the measured result of the close you are looking at: open
+          exceptions, closures with no human on the record, autonomy, and human touches, each one
+          shown as it stood when the close was opened and as it stands now. Those figures are read
+          off the same journal the queue renders from, so{" "}
+          <Link href="/close#measures" className="underline underline-offset-4">
+            the measured result panel above the queue
+          </Link>{" "}
+          moves while you work rather than after someone writes a slide.
         </p>
       </div>
 

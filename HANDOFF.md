@@ -626,7 +626,7 @@ table are the contract), `lib/data.ts`, `lib/precedent.ts`, `lib/store.ts`,
    frequently read "local settlement fixture" instead. Worth knowing before the
    recording.
 
-**Next best step.** HANDOFF 3D, the measurement view. The journal now carries
+**Next best step (written at the end of Phase 3).** HANDOFF 3D, the measurement view. The journal now carries
 every number the README table claims: exceptions raised, closures with no human,
 autonomy before and after, and human touches, all durable across a reload and all
 already computed in `components/close-queue.tsx` from state that now comes out of
@@ -634,3 +634,209 @@ already computed in `components/close-queue.tsx` from state that now comes out o
 them, so a judge can watch a number move during the demo and then read the same
 number in the README. Requirement 7 asks for exactly that and the judges weight
 reliability at 25 percent.
+
+---
+
+### Phase 4, 6 September 2026: the prize rows, the measurement panel, the surface judges touch
+
+**Goal.** Take HANDOFF 3D. Put the four numbers the README table claims on the
+close screen, computed live from the same state the judge just watched move, with
+the 61 percent baseline still next to them, and make that DEMO.md step 7. Record
+the three Track 2 prize rows this submission is entered for, in the README and in
+a new `DELIVERY.md` the human works from at submission time. Then audit both demo
+routes for 360px and fix the metadata that would have shipped a broken og:image.
+
+**Status.** All four slices done. Nothing was cut. **Not verified by me: nothing
+in this phase was executed, because this session had file tools only.**
+`npm install`, `npm run build`, `npm test` and the browser are all unrun. Every
+claim below was checked by reading a file, and the file and line are named where
+it matters. Read "written", not "proven".
+
+**What is on screen now.** `components/close-measures.tsx` renders a
+`<section id="measures">` inside the close screen: the kicker "Measured result,
+this close", the heading "What has changed while you watched", and four ruled
+rows with a left column reading 24, 38 of 62, 61 percent, 0 and a right column
+carrying whatever the queue currently shows. It is pure presentational, takes
+nine numbers and no objects, holds no state and makes no request, so it needs no
+`"use client"` line of its own: it inherits the boundary from
+`components/close-queue.tsx`, its only importer. The nine numbers were already
+computed in that file; the only new arithmetic is the three baseline consts
+(`seededOpenCount`, `baselineClosures`, `baselineAutonomy`).
+
+**Decisions.**
+
+1. **The nav keeps three visible links at every width, no disclosure pattern.**
+   "Overview", "Close queue" and "Source" are one or two words each. A drawer
+   would put a tap and an animation in front of the one link the judge on a phone
+   actually wants, and would add a state hook to a component that currently has
+   one. The small-screen behaviour is `flex-wrap` with `gap-3 sm:gap-5`, and each
+   link is `inline-flex min-h-11 items-center` so it is a 44px target rather than
+   a 20px line of text.
+2. **Two prize rows were deliberately dropped.** `Track 2 - AI Grants India
+   Credits`, because AI Grants India is open to people building in India and this
+   team is not; expected value about $1.25. And every Track 1 row, because the
+   rules page says a project may enter only one track and the derived field for
+   Track 1 is more than twice as crowded for the same money. Restoring either
+   means re-entering under a different track, which is a form change, not a code
+   change. Both are written into `DELIVERY.md` under "Rows deliberately not
+   entered" so the reason survives this session.
+3. **AO (Agent Orchestrator) is a process requirement, not a runtime
+   dependency.** This build calls no AO API and has no AO call site. The
+   `Required tech` column in the README table reads `AO (Agent Orchestrator)` for
+   all three rows because that is what the rules page requires of the *build*,
+   and the proof is the AO dashboard with the session count in the video, not a
+   line of code. The `Code file` column names the file each row's DEMO step
+   actually runs on instead: `lib/precedent.ts` for the cash row (step 3) and
+   `lib/dodo.ts` for the two Dodo rows (step 6). Do not describe an AO call on
+   camera; there is not one.
+4. **The measures panel sits after the precedent inspector, not between the audit
+   trail and the inspector.** The brief bounds it "after the audit trail card and
+   before the `obiter-rule` divider that precedes the queue list", and the
+   inspector sits inside that span. Putting the panel above the inspector would
+   push the inspector down the page in step 5, exactly when the judge is being
+   asked to read the seven touched records. It is still inside the named bounds.
+5. **The "Human touches" row never turns forest.** The other three rows go green
+   when the right column beats the left one. A human touch is the cost side of
+   the ledger, so it renders `text-muted-foreground` while it is still 0 and
+   `text-ink` once a controller has decided something. Colouring "0 to 1" as an
+   improvement would have made the one honest counter on the panel lie.
+6. **`README.md` rides in the first commit and `components/close-queue.tsx` in
+   the second.** README carries slice 1's prize table and slice 2's one sentence
+   about `/close#measures`; close-queue carries slice 2's wiring and slice 3's
+   touch targets; `app/page.tsx` carries slice 3's CTA target and slice 4's
+   landing link. Git commits whole files, so each is listed once, in the slice
+   whose change is the larger one. Every commit in `.farm-commits.json` leaves a
+   tree whose imports resolve: `components/close-measures.tsx` lands in the same
+   commit as the import of it.
+7. **No new env key, no new route, no new dependency, no schema change.** The
+   panel needed none of them, which is why it was the slice worth taking with an
+   hour left.
+
+**Failed attempts.** None. No edit needed a second correction. Read that as
+"untested", not as "clean": nothing here was executed.
+
+**Files changed.**
+
+Created: `DELIVERY.md`, `components/close-measures.tsx`, `.farm-commits.json`.
+
+Edited: `README.md` (the prize table, the two eligibility quotes, one sentence
+under the measured-result table), `DEMO.md` (the heading now says seven steps and
+step 7 was appended; steps 1 to 6 and the routes table are untouched),
+`components/close-queue.tsx` (the import, three baseline consts, one render, and
+the `min-h-11` touch targets), `components/site-nav.tsx` (wrap, gap, touch
+targets), `app/layout.tsx` (`metadataBase`, `twitter`), `app/page.tsx` (the CTA
+target and the two sentences linking `/close#measures`), `HANDOFF.md`.
+
+Untouched on purpose: `IDENTITY.md`, `lib/data.ts`, `lib/precedent.ts`,
+`lib/store.ts`, `lib/db/*`, `lib/agent.ts`, `lib/adapters.ts`,
+`lib/fake-compiler.ts`, `lib/dodo.ts`, `drizzle/0000_init.sql`, `fixtures/*`,
+`scripts/*`, `public/brand/*`, `components/ui/*`, `app/globals.css`,
+`app/icon.svg`, `app/opengraph-image.png`, `app/error.tsx`, `app/not-found.tsx`,
+`.env.example`, `app/api/*`.
+
+**Commands run.** None, this session had file tools only.
+
+**Acceptance gate, item by item, checked by reading.**
+
+- **Met.** `README.md` carries the header row
+  `| Bounty | Prize | Slots | Required tech | Code file | DEMO step |` with the
+  three Bounty and Prize strings as written, and the two eligibility quotes sit
+  in a blockquote directly under it.
+- **Met.** `DELIVERY.md` has the three headings byte identical to the bounty
+  names, each with `entryMode:`, `action:`, `deadline:` and `watch:`, plus the
+  "Before submitting" list. `watch:` is 3 for the cash row and 6 for the two Dodo
+  rows; both steps exist in `DEMO.md`.
+- **Met.** `DODO_PAYMENTS_API_KEY` (`.env.example:43`) is empty and
+  `DODO_PAYMENTS_API_BASE` (`.env.example:47`) is the test host. No key was
+  added, no key was committed, and this phase added no env key at all.
+- **Met, with the import path stated precisely.** Removing `lib/dodo.ts` breaks
+  DEMO.md step 6. `app/api/settlements/route.ts:4` imports
+  `settlementToException` from `@/lib/dodo` directly, and reaches
+  `fetchLatestSettlement` one hop away through `getLatestSettlement` in
+  `lib/adapters.ts`, which imports it at `lib/adapters.ts:32`. Those two
+  functions are the whole data path of step 6: one produces the money, the other
+  turns it into the exception the queue renders.
+- **Met.** AO is a process requirement with no call site in this repo. See
+  decision 3.
+- **Met.** One model provider (Anthropic, through `lib/agent.ts`), one primary
+  store (Postgres through `lib/store.ts`), one payments source (Dodo, through
+  `lib/dodo.ts`). This phase added no provider, no store and no endpoint.
+- **Met.** `DEMO.md` is numbered 1 through 7, steps 1 to 6 are unchanged word for
+  word, and the routes table is unchanged. Step 7 adds no route.
+- **Met.** `components/close-measures.tsx` exports `CloseMeasures`, imports only
+  `cn` from `@/lib/utils`, and is imported and rendered exactly once by
+  `components/close-queue.tsx`. Its untouched state renders a written sentence
+  saying nothing has moved yet and what to press, never a bare "No data".
+- **Met.** The panel is on `/close`, which is in the nav, and `app/page.tsx`
+  links `/close#measures`. The section carries `scroll-mt-20` so the sticky
+  header does not sit on top of the heading when the anchor lands.
+- **Met by reading.** Every import in every file touched resolves to a file in
+  this snapshot. Whether it compiles is the runner's `npm run build`.
+- **Met.** `lib/data.ts` was not opened. The demo is still 24 open exceptions at
+  61 percent, and the panel's left column is computed from
+  `initialQueue.length` and `summary`, not typed in.
+- **Met.** No `useSearchParams` call anywhere (the only hit is the explanatory
+  comment at `components/site-nav.tsx:9`), no filesystem write outside
+  `scripts/`, and `process.env` appears only in `lib/config.ts` and
+  `scripts/*.mjs`.
+
+**Tripwire greps, run by me over the repo.**
+
+- The 24 banned hex values: zero hits under `app/` and `components/`. The only
+  repo hits are `IDENTITY.md:21` and the Phase 3 report line in this file.
+- Any hex literal under `app/` or `components/`: `app/globals.css` (the nine
+  tokens) and `app/icon.svg` (exempt) only. Zero under `components/`.
+- `fade-up`, `glow-pulse`, `caret-blink`, `pulse-dot`, `--delay`, `--d`,
+  `backdrop-blur`, `bg-*/85`: same two documentation lines, zero in code.
+- `@keyframes`: exactly two repo-wide, `obiter-wipe` and `obiter-stamp`, both in
+  `app/globals.css`.
+- `font-mono` under `components/`: one hit, the rule JSON `pre` at
+  `components/close-queue.tsx`, which is the sanctioned mono surface and already
+  sits in an `overflow-x-auto` block. Zero in `components/close-measures.tsx`.
+- `<Image` with a `/brand/` src: exactly one, `app/layout.tsx`, inside the home
+  link.
+- Banned props, by eye: none. The panel is ruled rows, not stat tiles, no card
+  grid, no browser chrome, no console card, no pulse dot, no translucent header.
+
+**Open questions.**
+
+1. **`console.` is not zero under `app/`.** The slice 4 check asked for zero
+   hits; there are nine, all in the three route handlers under `app/api/`
+   (`settlements`, `precedent`, `close/journal`). They are server-side logs of
+   the same kind as the `console.warn` in `lib/dodo.ts` that the brief keeps on
+   purpose: they print to the server log, never to a browser console. Zero hits
+   in every page and every component. I left them, because deleting a route's
+   audit logging to satisfy a grep aimed at client noise would cost the one
+   signal there is when a journal write fails. If the runner wants literal zero,
+   they move to a `log()` helper in `lib/config.ts`, which is a ten minute change
+   nobody needs before the recording.
+2. Nothing from Phase 2's or Phase 3's open questions was closed. `postgresStore`
+   still has not met a real database, a misconfigured `DATABASE_URL` still looks
+   like a fresh close, the Dodo response envelope is still a guess, and the
+   autonomy denominator still grows with pulled settlements. That last one is now
+   visible on the panel too: pull three settlements and the "of 62" in row two
+   becomes "of 65" in both columns, because `raised` is shared. That is correct
+   arithmetic and it will look odd on camera if the controller pulls repeatedly
+   before reading the panel.
+3. `app/opengraph-image.png` was not opened and not replaced. `metadataBase` now
+   points at `https://obiter-app.vercel.app`, so the absolute og:image URL is
+   right if and only if that is the host the project actually deploys to. Confirm
+   it in view-source on the live page; that check is on the human list in section
+   5, not something a file read can settle.
+4. The panel's left column is the close *as opened*, not the close as seeded.
+   `seededOpenCount` is `initialQueue.length`, which `app/close/page.tsx` has
+   already stripped persisted settlements out of. On a fresh close that is 24. On
+   a close where a previous session left closures in the journal, the queue
+   hydrates those rows as closed and the right column starts below the left one,
+   which is the honest reading but is not the 24 the README table claims. Run
+   `npm run demo:reset` before a take, which the demo script already says.
+
+**Next best step.** The recording. Everything requirement 7 asks for is now on
+one screen and matches the README line for line, so the remaining gap between
+this repo and a submission is not code: it is `npm run build` and `npm test`
+actually run, three clean walks of all seven DEMO.md steps at
+`ADAPTER_MODE=real` with a live key, the 360px pass on the deployed URL, and the
+`DELIVERY.md` list. If a later phase does touch code, the highest-value item left
+is HANDOFF 3B: ten live compiler runs across all six patterns, checking for rules
+wider than the controller asked for. `adoptModelRule` bounds the tolerance now,
+but nobody has watched a real model try to widen a scope ten times in a row.
