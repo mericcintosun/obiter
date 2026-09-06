@@ -35,41 +35,47 @@ export default async function Home() {
   const baseline = Math.round((closeSummary.closedByCarriedPrecedents / closeSummary.exceptionsRaised) * 100);
 
   return (
-    <article className="mx-auto max-w-[68ch] px-5 pt-14 pb-4">
+    <article className="mx-auto max-w-[68ch] px-5 pt-12 pb-4">
+      {/* The first screen. Kicker, claim, ink lede, dateline, the state of the
+          close in one sentence with the live figures in it, and the way in. The
+          CTA used to sit two and a half screens below this. */}
       <p className="obiter-label">Month-end close / Reconciliation exceptions</p>
 
-      <h1 className="mt-4 text-[clamp(2.4rem,6vw,3.6rem)] leading-[1.06]">
+      <h1 className="mt-4 text-[clamp(2.25rem,5.4vw,3.4rem)] leading-[1.06]">
         The controller decides once. Obiter keeps the decision.
       </h1>
 
-      <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
+      <p className="obiter-lede mt-5">
         Bank activity and invoices never agree at the end of the month. The easy 90 percent
         matches itself. What is left is a list of exceptions that one person works through by
         hand, every month, from scratch, because last month&apos;s reasoning was never written
         down anywhere a machine could read it.
       </p>
 
-      <div className="obiter-rule mt-10" />
-
-      <h2 className="mt-10 text-2xl">The part that never got automated</h2>
-      <p className="mt-4 leading-relaxed">
-        Underpayments. Currency moves between the invoice date and the settlement date. One
-        transfer covering three invoices. Money that arrives two days after the cutoff. A
-        controller at a 10 to 50 person company, or the close team at an accounting firm,
-        resolves each of these individually. When the same customer underpays by the same
-        euro next month, the same line lands back in the queue and gets the same thirty
-        seconds of thought.
-      </p>
-      <p className="mt-4 leading-relaxed">
-        The seeded close in this repo is a fair example. Halden Analytics ran{" "}
-        {closeSummary.bankLines} bank lines against {closeSummary.invoices} invoices for{" "}
-        {closeSummary.period}. The matcher raised {closeSummary.exceptionsRaised} exceptions.
-        Precedents written in June and July shut {closeSummary.closedByCarriedPrecedents} of
-        them before anyone opened the screen, which is a {baseline} percent autonomy rate. The
-        remaining {open} are waiting for a human.
+      <p className="obiter-dateline mt-7">
+        {closeSummary.entity} / {closeSummary.period} close
       </p>
 
-      <figure className="mt-10">
+      <p className="mt-2 leading-relaxed">
+        The matcher raised <span className="obiter-figure">{closeSummary.exceptionsRaised}</span>{" "}
+        exceptions against this close. Precedents carried in from June and July shut enough of
+        them to put autonomy at{" "}
+        <span className="obiter-figure font-medium">{baseline} percent</span> before anyone opened
+        the screen, and <span className="obiter-figure font-medium">{open}</span> are still sitting
+        there waiting for a person. That queue is live in this app right now.
+      </p>
+
+      <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Button size="lg" className="min-h-11" asChild>
+          <Link href="/close">Open the August 2026 close queue</Link>
+        </Button>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {open} open exceptions across six patterns, seeded and ready. No sign in, no keys
+          needed.
+        </p>
+      </div>
+
+      <figure className="mt-9">
         {/* unoptimized because the image optimizer refuses SVG in production, and
             this asset is ours and already small. This is an illustration, not a
             brand mark, so the one mark rule in app/layout.tsx is untouched. */}
@@ -87,7 +93,29 @@ export default async function Home() {
         </figcaption>
       </figure>
 
-      <h2 className="mt-12 text-2xl">What Obiter does with one decision</h2>
+      <div className="obiter-rule mt-10" />
+
+      <p className="obiter-runninghead mt-10">Section 1, the residue</p>
+      <h2 className="mt-3 text-2xl">The part that never got automated</h2>
+      <p className="mt-4 leading-relaxed">
+        Underpayments. Currency moves between the invoice date and the settlement date. One
+        transfer covering three invoices. Money that arrives two days after the cutoff. A
+        controller at a 10 to 50 person company, or the close team at an accounting firm,
+        resolves each of these individually. When the same customer underpays by the same
+        euro next month, the same line lands back in the queue and gets the same thirty
+        seconds of thought.
+      </p>
+      <p className="mt-4 leading-relaxed">
+        The seeded close in this repo is a fair example. Halden Analytics ran{" "}
+        {closeSummary.bankLines} bank lines against {closeSummary.invoices} invoices for{" "}
+        {closeSummary.period}. The matcher raised {closeSummary.exceptionsRaised} exceptions.
+        Precedents written in June and July shut {closeSummary.closedByCarriedPrecedents} of
+        them before anyone opened the screen, which is a {baseline} percent autonomy rate. The
+        remaining {open} are waiting for a human.
+      </p>
+
+      <p className="obiter-runninghead mt-10">Section 2, the compiler</p>
+      <h2 className="mt-3 text-2xl">What Obiter does with one decision</h2>
       <p className="mt-4 leading-relaxed">
         You resolve a single exception the way you already would: this customer is short by
         $1.65 because their bank converted at a different rate, close it as rounding, tolerance
@@ -100,28 +128,19 @@ export default async function Home() {
         approve, and they close in front of you, each one stamped with the precedent id. If the
         rule was wrong, one click reverts every record it ever touched, in a single pass.
       </p>
+      <p className="mt-4 leading-relaxed">
+        The close screen carries the measured result of the close you are looking at: open
+        exceptions, closures with no human on the record, autonomy, and human touches, each one
+        shown as it stood when the close was opened and as it stands now. Those figures are read
+        off the same journal the queue renders from, so{" "}
+        <Link href="/close#measures" className="underline underline-offset-4">
+          the measured result panel above the queue
+        </Link>{" "}
+        moves while you work rather than after someone writes a slide.
+      </p>
 
-      <div className="mt-8">
-        <Button size="lg" className="min-h-11" asChild>
-          <Link href="/close">Open the August 2026 close queue</Link>
-        </Button>
-        <p className="mt-3 text-sm text-muted-foreground">
-          {open} open exceptions across six patterns, seeded and ready. No sign in, no keys
-          needed.
-        </p>
-        <p className="mt-4 max-w-[68ch] leading-relaxed">
-          The close screen now carries the measured result of the close you are looking at: open
-          exceptions, closures with no human on the record, autonomy, and human touches, each one
-          shown as it stood when the close was opened and as it stands now. Those figures are read
-          off the same journal the queue renders from, so{" "}
-          <Link href="/close#measures" className="underline underline-offset-4">
-            the measured result panel above the queue
-          </Link>{" "}
-          moves while you work rather than after someone writes a slide.
-        </p>
-      </div>
-
-      <h2 className="mt-12 text-2xl">A precedent is something you can read</h2>
+      <p className="obiter-runninghead mt-10">Section 3, the object</p>
+      <h2 className="mt-3 text-2xl">A precedent is something you can read</h2>
       <p className="mt-4 leading-relaxed">
         This is the whole object a decision compiles to. A language model writes it once. After
         that a deterministic executor runs it, so the same queue always produces the same
@@ -166,7 +185,8 @@ export default async function Home() {
         </div>
       </details>
 
-      <h2 className="mt-12 text-2xl">Why not just let a model learn from the reviewer</h2>
+      <p className="obiter-runninghead mt-10">Section 4, the argument</p>
+      <h2 className="mt-3 text-2xl">Why not just let a model learn from the reviewer</h2>
       <p className="mt-4 leading-relaxed">
         Several reconciliation products now claim to learn from reviewer actions and act on
         their own after enough training. That is a hard thing to sign off on, because you cannot
@@ -177,14 +197,47 @@ export default async function Home() {
         the start of this close, and higher after every precedent you approve.
       </p>
 
-      <h2 className="mt-12 text-2xl">Built on</h2>
-      <p className="mt-4 leading-relaxed">
-        Next.js 15 and TypeScript on Vercel. Claude for the one compilation step, with the rule
-        schema enforced as a tool definition. Zod for validation of anything a model produced.
-        Dodo Payments test mode for the live settlement feed. The build itself was split across
-        Agent Orchestrator sessions: engine, compiler, interface, and seed data each ran as
-        their own worker.
-      </p>
+      <p className="obiter-runninghead mt-10">Section 5, the build</p>
+      <h2 className="mt-3 text-2xl">Built on</h2>
+      {/* A ruled ledger in the body face, one entry per line. Not a stat band:
+          no big numerals, no mono, no grid of cells. */}
+      <dl className="mt-5">
+        <div className="obiter-rule flex flex-col gap-1 py-3 sm:flex-row sm:gap-4">
+          <dt className="font-medium sm:w-[13.5rem] sm:shrink-0">Agent Orchestrator</dt>
+          <dd className="text-sm leading-relaxed sm:flex-1">
+            The build was split across orchestrator and worker sessions: engine, compiler,
+            interface, and seed data each ran as their own worker.
+          </dd>
+        </div>
+        <div className="obiter-rule flex flex-col gap-1 py-3 sm:flex-row sm:gap-4">
+          <dt className="font-medium sm:w-[13.5rem] sm:shrink-0">Claude</dt>
+          <dd className="text-sm leading-relaxed sm:flex-1">
+            One compilation step, with the precedent rule schema handed over as a tool
+            definition rather than described in prose.
+          </dd>
+        </div>
+        <div className="obiter-rule flex flex-col gap-1 py-3 sm:flex-row sm:gap-4">
+          <dt className="font-medium sm:w-[13.5rem] sm:shrink-0">Zod</dt>
+          <dd className="text-sm leading-relaxed sm:flex-1">
+            Validation of anything a model produced, including the rejection of a rule that
+            tries to widen its own scope or its own tolerance.
+          </dd>
+        </div>
+        <div className="obiter-rule flex flex-col gap-1 py-3 sm:flex-row sm:gap-4">
+          <dt className="font-medium sm:w-[13.5rem] sm:shrink-0">Dodo Payments</dt>
+          <dd className="text-sm leading-relaxed sm:flex-1">
+            Test mode for the live settlement feed, so money that arrives during the close
+            becomes an exception like any other.
+          </dd>
+        </div>
+        <div className="obiter-rule flex flex-col gap-1 py-3 sm:flex-row sm:gap-4">
+          <dt className="font-medium sm:w-[13.5rem] sm:shrink-0">Next.js 15 and TypeScript</dt>
+          <dd className="text-sm leading-relaxed sm:flex-1">
+            App Router on Vercel, strict mode, with the close journal in Postgres behind one
+            adapter seam.
+          </dd>
+        </div>
+      </dl>
     </article>
   );
 }
