@@ -79,6 +79,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               the CFO. Seed data is a fictional August 2026 close for a company called Halden
               Analytics.
             </p>
+            <p className="mt-3">
+              Source at{" "}
+              <a
+                href="https://github.com/mericcintosun/obiter"
+                className="underline underline-offset-4"
+              >
+                github.com/mericcintosun/obiter
+              </a>
+              , and what this app touches is written out in{" "}
+              <a
+                href="https://github.com/mericcintosun/obiter/blob/main/SECURITY.md"
+                className="underline underline-offset-4"
+              >
+                SECURITY.md
+              </a>
+              . The close on screen is fictional, and Obiter stores no customer records and no
+              payment data of its own.
+            </p>
           </div>
         </footer>
       </body>
