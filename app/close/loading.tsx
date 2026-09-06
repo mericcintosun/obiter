@@ -4,7 +4,7 @@
 // have one, and a still skeleton reads as a page setting itself rather than as
 // something being waited on.
 
-export default function LoadingClose() {
+export default function CloseQueueSkeleton() {
   return (
     <div
       role="status"

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 // not a stack. A controller cannot act on any of it, and a close screen is not
 // the place to leak the shape of the server. The detail is in the server log.
 
-export default function Error({ reset }: { error: Error; reset: () => void }) {
+export default function RouteErrorState({ reset }: { error: Error; reset: () => void }) {
   return (
     <div className="mx-auto max-w-[68ch] px-5 py-24">
       <p className="obiter-label">Obiter</p>
