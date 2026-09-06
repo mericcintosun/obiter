@@ -85,7 +85,10 @@ export function CloseMeasures({
   ];
 
   return (
-    <section id="measures" className="mt-10 scroll-mt-20">
+    // The frame only: a rule above the panel so it reads as the same ledger
+    // object as the queue below it. The four rows and their labels are the
+    // DEMO.md step 7 contract and are untouched.
+    <section id="measures" className="mt-10 scroll-mt-20 border-t border-border pt-8">
       <p className="obiter-label">Measured result, this close</p>
       <h2 className="mt-2 max-w-full text-2xl">What has changed while you watched</h2>
 

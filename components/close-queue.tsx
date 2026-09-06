@@ -458,11 +458,27 @@ export function CloseQueue({
           : "Nothing is left open. Every pattern in this close has a precedent on file."}
       </p>
 
-      <div className="mt-5 h-2 w-full border border-border bg-surface" aria-hidden>
+      {/* The meter is a labeled ruled frame rather than a bare bar: a judge
+          tabbing through the page hears what the number is, and a reader sees
+          what it measures without reading the sentence above it. */}
+      <div className="mt-5 border-t border-border pt-4">
+        <div className="flex items-baseline justify-between gap-4">
+          <p className="obiter-label">Autonomy, this close</p>
+          <p className="obiter-figure text-sm font-medium">{autonomy} percent</p>
+        </div>
         <div
-          className="h-full bg-second transition-[width] duration-700 ease-out"
-          style={{ width: `${autonomy}%` }}
-        />
+          role="progressbar"
+          aria-valuenow={autonomy}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Autonomy rate for this close, ${autonomy} percent of exceptions closed with nobody looking at the record`}
+          className="mt-2 h-2 w-full border border-border bg-surface"
+        >
+          <div
+            className="h-full bg-second transition-[width] duration-700 ease-out"
+            style={{ width: `${autonomy}%` }}
+          />
+        </div>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
         Human touches this close: <span className="obiter-figure">{humanTouches}</span>. Precedents
@@ -569,7 +585,21 @@ export function CloseQueue({
         <QueueEmptyState onPull={pullSettlement} />
       ) : null}
 
-      <ul className="obiter-queue mt-2">
+      {/* The queue's column header. Hidden under sm the same way the measures
+          panel hides its own, because at 360px the row itself reflows to three
+          lines and a header would name columns that are no longer side by side.
+          The widths mirror the cells below so the ledger lines up. */}
+      <div className="obiter-queue-head mt-6 hidden items-center gap-3 sm:flex">
+        <span className="flex flex-1 items-baseline gap-x-3 px-2">
+          <span className="obiter-label w-[5.5rem] shrink-0">id</span>
+          <span className="obiter-label min-w-[13rem] flex-1">counterparty</span>
+          <span className="obiter-label w-[9.5rem] shrink-0">pattern</span>
+          <span className="obiter-label w-[7rem] shrink-0 text-right">shortfall</span>
+        </span>
+        <span className="obiter-label w-[4.5rem] shrink-0 text-right">status</span>
+      </div>
+
+      <ul className="obiter-queue">
         {exceptions.map((exception) => {
           const status: RowStatus = statuses[exception.id] ?? { state: "open" };
           const isClosed = status.state === "closed";
@@ -578,9 +608,17 @@ export function CloseQueue({
           const delta = shortfall(exception);
 
           return (
+            // A closed row carries the seal in its margin, the way the landing
+            // illustration draws it, instead of fading out. A record closed
+            // under a precedent is more settled than an open one, not less
+            // present.
             <li
               key={exception.id}
-              className={cn("obiter-rule", changed && "obiter-wipe", isClosed && "opacity-70")}
+              className={cn(
+                "obiter-rule",
+                changed && "obiter-wipe",
+                isClosed && "border-l-2 border-seal pl-2"
+              )}
             >
               <div className="flex items-center gap-3">
                 <Button
