@@ -10,7 +10,7 @@
 | Demo start route | https://obiter-app.vercel.app/close |
 | Measured result panel | https://obiter-app.vercel.app/close#measures |
 | Repository | https://github.com/mericcintosun/obiter |
-| Demo video | `<ADD_VIDEO_URL>` |
+| Demo video | Recorded. 4:50, narrated, served from the site as a plain mp4. | [demo-video.mp4](https://obiter-app.vercel.app/demo-video.mp4) |
 
 There is no `contracts/` directory, no chain and no wallet in this repo, so there
 is no contract address row and no on-chain smoke script. The close journal is the

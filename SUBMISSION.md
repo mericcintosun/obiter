@@ -2,7 +2,7 @@
 
 Every field of the Devpost form, in the form's order, ready to paste. Nothing in
 this file is read by code. Two placeholders are left for the human at the form:
-`<ADD_VIDEO_URL>` and `<ADD_TEAM_MEMBER_NAMES>`. Fill both before you submit.
+https://obiter-app.vercel.app/demo-video.mp4 and `<ADD_TEAM_MEMBER_NAMES>`. Fill both before you submit.
 
 Every claim below is limited to what the recording actually shows. If a sentence
 here is not on screen in the video, cut the sentence rather than the shot.
@@ -179,7 +179,7 @@ part of the recorded flow.
 ## 7. Video demo link
 
 ```
-<ADD_VIDEO_URL>
+https://obiter-app.vercel.app/demo-video.mp4
 ```
 
 The shot list, the spoken lines and the timings are in
@@ -220,7 +220,7 @@ row, because a project may enter only one track.
 
 ## 10. Before you press submit
 
-- [ ] `<ADD_VIDEO_URL>` replaced here and in `README.md`.
+- [ ] https://obiter-app.vercel.app/demo-video.mp4 replaced here and in `README.md`.
 - [ ] `<ADD_TEAM_MEMBER_NAMES>` replaced here and in `README.md`.
 - [ ] Track 2 selected on the form.
 - [ ] Repo link and live link pasted.
