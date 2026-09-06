@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { compilePrecedentViaAdapter } from "@/lib/adapters";
 import { LOG_PREFIX } from "@/lib/config";
 import { fail } from "@/lib/errors";
+import { sameOriginOk } from "@/lib/http";
 import { nextPrecedentId, previewPrecedent } from "@/lib/precedent";
 import { compileRequestSchema } from "@/lib/schemas";
 import type { CompilePrecedentResponse } from "@/lib/types";
@@ -21,6 +22,15 @@ async function readJson(request: Request): Promise<unknown> {
 }
 
 export async function POST(request: Request) {
+  // First, before the body is even read: this route reaches a paid model, so a
+  // page on another site does not get to spend the close's compile budget.
+  if (!sameOriginOk(request)) {
+    return NextResponse.json(
+      fail("invalid_input", "The compiler only accepts decisions from the close screen itself."),
+      { status: 403 }
+    );
+  }
+
   const parsed = compileRequestSchema.safeParse(await readJson(request));
 
   if (!parsed.success) {

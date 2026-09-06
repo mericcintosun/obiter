@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { markJournalWrite } from "@/lib/cache";
 import { LOG_PREFIX } from "@/lib/config";
 import { fail } from "@/lib/errors";
+import { sameOriginOk } from "@/lib/http";
 import { journalRequestSchema } from "@/lib/schemas";
 import { closeStore } from "@/lib/store";
 
@@ -28,6 +29,15 @@ async function readJson(request: Request): Promise<unknown> {
  * screen says so in the audit trail rather than rolling back under the cursor.
  */
 export async function POST(request: Request) {
+  // First, before the body is even read: the reset op deletes every row this
+  // close wrote, so a page on another site may not reach it.
+  if (!sameOriginOk(request)) {
+    return NextResponse.json(
+      fail("invalid_input", "The close ledger only accepts writes from the close screen itself."),
+      { status: 403 }
+    );
+  }
+
   const parsed = journalRequestSchema.safeParse(await readJson(request));
 
   if (!parsed.success) {
