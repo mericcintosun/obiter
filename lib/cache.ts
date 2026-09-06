@@ -14,7 +14,7 @@
 // moves between two identical decisions, and pinning it is the whole point: a
 // cache hit replays the first take's timestamp rather than minting a new one.
 
-import { COMPILE_CACHE_MAX } from "@/lib/config";
+import { COMPILE_CACHE_MAX, JOURNAL_KEY_MAX } from "@/lib/config";
 import type { CompileResult } from "@/lib/agent";
 import type { DraftInput } from "@/lib/precedent";
 
@@ -60,4 +60,34 @@ export function writeCompileCache(key: string, result: CompileResult): void {
     if (oldest.done) break;
     entries.delete(oldest.value);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Journal idempotency keys.
+// ---------------------------------------------------------------------------
+
+const journalKeys = new Set<string>();
+
+/**
+ * Records one journal write's idempotency key. Returns false when this instance
+ * has already seen it, which is the caller's signal that the write is a repeat.
+ *
+ * Be honest about what this is and is not. It is a Set in one server process,
+ * so it catches a double click that lands twice on the same instance, and it
+ * catches nothing at all across two instances or after a restart. The durable
+ * half is the natural keys in lib/store.ts: `onConflictDoUpdate` on
+ * `precedents`, `onConflictDoNothing` on `closures` and `live_exceptions`. Those
+ * are what make a retry safe wherever it lands. This is the cheap first line
+ * that keeps a repeat from reaching the database at all.
+ */
+export function markJournalWrite(key: string): boolean {
+  if (journalKeys.has(key)) return false;
+  journalKeys.add(key);
+  while (journalKeys.size > JOURNAL_KEY_MAX) {
+    // A Set iterates in insertion order too, so the first key is the oldest.
+    const oldest = journalKeys.values().next();
+    if (oldest.done) break;
+    journalKeys.delete(oldest.value);
+  }
+  return true;
 }

@@ -109,6 +109,58 @@ const sourceLabels: Record<string, string> = {
   deterministic: "the offline deterministic compiler",
 };
 
+/**
+ * What a caller hands `persist`: everything except the idempotency key, which
+ * `persist` mints itself so no call site can forget one. Distributive on
+ * purpose, because a plain Omit over a discriminated union collapses it into a
+ * single object and loses the `op` discriminator.
+ */
+type WithoutKey<T> = T extends unknown ? Omit<T, "idempotencyKey"> : never;
+type JournalWrite = WithoutKey<JournalRequest>;
+
+/**
+ * The one place a failed compile or a failed settlement pull lands.
+ *
+ * It carries the retry with it. A message with no way back is a dead end rather
+ * than an error state, and on camera a dead end costs a take: the controller
+ * would have to reload the screen and lose the queue they were showing.
+ */
+function QueueErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <Card className="mt-6 border-bad">
+      <CardContent className="p-4 pt-4 text-sm">
+        <p className="leading-relaxed">
+          <span className="font-medium text-bad">Something failed. </span>
+          {message}
+        </p>
+        <Button size="sm" variant="outline" className="mt-3" onClick={onRetry}>
+          Try that again
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Every open exception is covered by a precedent. The next click in the demo is
+ * the settlement pull, so it is a button on this screen rather than a sentence
+ * describing one.
+ */
+function QueueEmptyState({ onPull }: { onPull: () => void }) {
+  return (
+    <div className="border border-border bg-surface px-6 py-10 text-center">
+      <h2 className="text-xl">The queue is empty</h2>
+      <p className="mx-auto mt-2 max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
+        Every open exception in this close is covered by a precedent. Pull a settlement to see
+        what happens to money that arrives now, or revert a precedent to put its records back.
+      </p>
+      <Button variant="outline" className="mt-5" onClick={onPull}>
+        Pull latest settlement
+      </Button>
+    </div>
+  );
+}
+
 export function CloseQueue({
   initialQueue,
   summary,
@@ -129,8 +181,13 @@ export function CloseQueue({
   const [tolerance, setTolerance] = useState("2");
   const [rationale, setRationale] = useState("");
   const [proposal, setProposal] = useState<CompilePrecedentResponse | null>(null);
-  const [phase, setPhase] = useState<"idle" | "compiling" | "proposed" | "pulling">("idle");
+  const [phase, setPhase] = useState<
+    "idle" | "compiling" | "proposed" | "pulling" | "applying" | "reverting"
+  >("idle");
   const [error, setError] = useState<string | null>(null);
+  // Which call produced the message above, so the retry button runs that call
+  // again rather than guessing. Cleared on entry to both of them.
+  const [failed, setFailed] = useState<null | "compile" | "pull">(null);
   const [inspecting, setInspecting] = useState<string | null>(null);
   const [justChanged, setJustChanged] = useState<string[]>([]);
   const [log, setLog] = useState<string[]>([]);
@@ -169,13 +226,17 @@ export function CloseQueue({
    * can decide what to do about it.
    */
   const persist = useCallback(
-    (body: JournalRequest) => {
+    (body: JournalWrite) => {
       const missed = () =>
         note("Not saved to the close ledger. The screen is ahead of the record.");
+      // One key per write, minted here rather than at the call site. A double
+      // click that gets two writes out of the browser sends the same key twice,
+      // and the route drops the second.
+      const entry: JournalRequest = { ...body, idempotencyKey: crypto.randomUUID() };
       void fetch("/api/close/journal", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(entry),
       })
         .then((response) => {
           if (!response.ok) missed();
@@ -187,6 +248,7 @@ export function CloseQueue({
 
   function selectException(exception: ReconException) {
     setError(null);
+    setFailed(null);
     setProposal(null);
     setPhase("idle");
     setInspecting(null);
@@ -205,6 +267,7 @@ export function CloseQueue({
     if (!selected) return;
     setPhase("compiling");
     setError(null);
+    setFailed(null);
     setProposal(null);
 
     const decision: ControllerDecision = {
@@ -233,12 +296,23 @@ export function CloseQueue({
       setPhase("proposed");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The compiler did not answer.");
+      setFailed("compile");
       setPhase("idle");
     }
   }
 
+  /** Runs whichever call produced the message the error state is showing. */
+  function retryFailed() {
+    if (failed === "compile") void compile();
+    else if (failed === "pull") void pullSettlement();
+  }
+
   function applyProposal() {
-    if (!proposal || !selected) return;
+    setPhase("applying");
+    if (!proposal || !selected) {
+      setPhase("idle");
+      return;
+    }
     const rule = proposal.rule;
     const touched = proposal.wouldClose.filter((id) => statuses[id]?.state === "open");
 
@@ -257,7 +331,6 @@ export function CloseQueue({
       } of them without a human looking at the record.`
     );
     setProposal(null);
-    setPhase("idle");
     setSelectedId(null);
     persist({
       op: "apply",
@@ -267,9 +340,11 @@ export function CloseQueue({
       source: proposal.source,
       elapsedMs: proposal.elapsedMs,
     });
+    setPhase("idle");
   }
 
   function revertPrecedent(precedentId: string) {
+    setPhase("reverting");
     const touched = Object.entries(statuses)
       .filter(([, status]) => status.state === "closed" && status.precedentId === precedentId)
       .map(([id]) => id);
@@ -284,11 +359,13 @@ export function CloseQueue({
     note(`${precedentId} reverted. ${touched.length} records returned to the open queue.`);
     setInspecting(null);
     persist({ op: "revert", precedentId });
+    setPhase("idle");
   }
 
   async function pullSettlement() {
     setPhase("pulling");
     setError(null);
+    setFailed(null);
     const sequence = settlementSeq.current;
     const exceptionId = `EXC-09${String(sequence + 1).padStart(2, "0")}`;
 
@@ -325,6 +402,7 @@ export function CloseQueue({
       });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The settlement feed did not answer.");
+      setFailed("pull");
       setPhase("idle");
     }
   }
@@ -337,6 +415,7 @@ export function CloseQueue({
     setProposal(null);
     setInspecting(null);
     setError(null);
+    setFailed(null);
     setPhase("idle");
     setLog([]);
     settlementSeq.current = 0;
@@ -389,14 +468,7 @@ export function CloseQueue({
         </Button>
       </div>
 
-      {error ? (
-        <Card className="mt-6 border-bad">
-          <CardContent className="p-4 pt-4 text-sm">
-            <span className="font-medium text-bad">Something failed. </span>
-            {error}
-          </CardContent>
-        </Card>
-      ) : null}
+      {error ? <QueueErrorState message={error} onRetry={retryFailed} /> : null}
 
       {log.length > 0 ? (
         <Card className="mt-6">
@@ -428,6 +500,7 @@ export function CloseQueue({
                 <Button
                   size="sm"
                   variant="destructive"
+                  disabled={phase === "reverting"}
                   onClick={() => revertPrecedent(inspected.id)}
                 >
                   Revert this precedent
@@ -459,13 +532,7 @@ export function CloseQueue({
       <div className="obiter-rule mt-10" />
 
       {openQueue.length === 0 && exceptions.length > 0 ? (
-        <div className="border border-border bg-surface px-6 py-10 text-center">
-          <h2 className="text-xl">The queue is empty</h2>
-          <p className="mx-auto mt-2 max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
-            Every open exception in this close is covered by a precedent. Pull a settlement to see
-            what happens to money that arrives now, or revert a precedent to put its records back.
-          </p>
-        </div>
+        <QueueEmptyState onPull={pullSettlement} />
       ) : null}
 
       <ul className="obiter-queue mt-2">
@@ -662,7 +729,7 @@ export function CloseQueue({
                         </p>
 
                         <div className="mt-4 flex flex-wrap gap-3">
-                          <Button onClick={applyProposal}>
+                          <Button onClick={applyProposal} disabled={phase === "applying"}>
                             Apply {proposal.rule.id} to the queue
                           </Button>
                           <Button variant="outline" onClick={() => setProposal(null)}>

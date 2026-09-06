@@ -65,10 +65,17 @@ export interface CloseJournal {
   sequence: number;
 }
 
-/** What the client posts to /api/close/journal. One entry per ledger write. */
+/**
+ * What the client posts to /api/close/journal. One entry per ledger write.
+ *
+ * `idempotencyKey` is on every member: one key per write, minted by the client,
+ * so a double click that gets two requests out of the browser is one write on
+ * the far side. It mirrors `journalRequestSchema` in lib/schemas.ts by hand.
+ */
 export type JournalRequest =
   | {
       op: "apply";
+      idempotencyKey: string;
       rule: PrecedentRule;
       closedIds: string[];
       /** The one record a human actually resolved, or null. */
@@ -77,14 +84,15 @@ export type JournalRequest =
       source?: string;
       elapsedMs?: number;
     }
-  | { op: "revert"; precedentId: string }
+  | { op: "revert"; idempotencyKey: string; precedentId: string }
   | {
       op: "settlement";
+      idempotencyKey: string;
       exception: ReconException;
       sequence: number;
       closedByPrecedentId: string | null;
     }
-  | { op: "reset" };
+  | { op: "reset"; idempotencyKey: string };
 
 /**
  * What POST /api/precedent returns. `wouldClose` is computed by the same

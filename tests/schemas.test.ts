@@ -22,11 +22,22 @@ describe("journalRequestSchema", () => {
     expect(parsed.success).toBe(false);
   });
 
-  it("accepts a well formed revert and a bare reset", () => {
+  it("rejects a write with no idempotency key", () => {
+    // Every op carries one. A ledger write with no key is a write the route
+    // cannot deduplicate, which is exactly the double click this guards.
     expect(journalRequestSchema.safeParse({ op: "revert", precedentId: "PREC-03" }).success).toBe(
-      true
+      false
     );
-    expect(journalRequestSchema.safeParse({ op: "reset" }).success).toBe(true);
+    expect(journalRequestSchema.safeParse({ op: "reset" }).success).toBe(false);
+  });
+
+  it("accepts a well formed revert and a reset when both carry a key", () => {
+    const idempotencyKey = "9f2c1d64-0c4e-4c2a-9a7e-2b1f4d6e8a10";
+    expect(
+      journalRequestSchema.safeParse({ op: "revert", precedentId: "PREC-03", idempotencyKey })
+        .success
+    ).toBe(true);
+    expect(journalRequestSchema.safeParse({ op: "reset", idempotencyKey }).success).toBe(true);
   });
 });
 

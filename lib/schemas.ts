@@ -52,12 +52,20 @@ export const compileRequestSchema = z.object({
 });
 
 /**
+ * One write's idempotency key. The client mints a UUID per write, so the bound
+ * is wide enough for one and narrow enough that nothing else fits. Required on
+ * every op: a ledger write with no key is a write that cannot be deduplicated.
+ */
+const idempotencyKey = z.string().min(8).max(64);
+
+/**
  * POST /api/close/journal. One entry per ledger write, discriminated on `op`, so
  * an unknown op is rejected by the parser rather than falling through a switch.
  */
 export const journalRequestSchema = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("apply"),
+    idempotencyKey,
     rule: precedentRuleSchema,
     closedIds: z.array(z.string().min(1).max(40)).max(500),
     humanDecidedId: z.string().min(1).max(40).nullable(),
@@ -66,16 +74,19 @@ export const journalRequestSchema = z.discriminatedUnion("op", [
   }),
   z.object({
     op: z.literal("revert"),
+    idempotencyKey,
     precedentId: z.string().regex(/^PREC-\d{2,3}$/),
   }),
   z.object({
     op: z.literal("settlement"),
+    idempotencyKey,
     exception: reconExceptionSchema,
     sequence: z.number().int().min(0).max(9999),
     closedByPrecedentId: z.string().regex(/^PREC-\d{2,3}$/).nullable(),
   }),
   z.object({
     op: z.literal("reset"),
+    idempotencyKey,
   }),
 ]);
 

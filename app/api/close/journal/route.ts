@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { markJournalWrite } from "@/lib/cache";
 import { LOG_PREFIX } from "@/lib/config";
 import { fail } from "@/lib/errors";
 import { journalRequestSchema } from "@/lib/schemas";
@@ -37,6 +38,11 @@ export async function POST(request: Request) {
   }
 
   const entry = parsed.data;
+
+  // The idempotency check. A key this instance has already written is a repeat,
+  // so it is acknowledged and dropped rather than replayed into the store.
+  if (!markJournalWrite(entry.idempotencyKey)) return NextResponse.json({ ok: true, duplicate: true });
+
   const store = closeStore();
 
   try {
