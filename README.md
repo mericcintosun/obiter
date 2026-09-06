@@ -70,7 +70,25 @@ It is validated with Zod before it is allowed near the queue. A rule that tries 
 
 Clearing all six patterns takes it to 56 of 62, which is 90 percent, on six human touches. Every number on the close screen is computed from the seed at render time, not hardcoded, so you can check it by counting rows.
 
+The same four numbers render live at `/close#measures`, computed from the close journal at render time, so the table above can be checked against the screen while the demo is running.
+
 ## How it uses the required and sponsor technology
+
+### The prize rows this submission is entered for
+
+One Devpost project, one track. These three rows all ride the same Track 2 submission, so none of them is a separate integration to build.
+
+| Bounty | Prize | Slots | Required tech | Code file | DEMO step |
+| --- | --- | --- | --- | --- | --- |
+| `Track 2 - 1st Place - Cash Prize by Maximor` | `$1,000 in cash` | 1 | `AO (Agent Orchestrator)` | `lib/precedent.ts` | 3 |
+| `Track 2 - 1st Place - Dodo Payments Credits` | `$1,000 in credits` | 1 | `AO (Agent Orchestrator)` | `lib/dodo.ts` | 6 |
+| `Track 2 - 2nd Place - Dodo Payments Credits` | `$500 in credits` | 1 | `AO (Agent Orchestrator)` | `lib/dodo.ts` | 6 |
+
+> "AO usage is mandatory for eligibility and will be verified through the submission and demo"
+>
+> "Each project may enter only one track"
+
+This project entered Track 2, Autonomous Office of the CFO, and no Track 1 row is claimed.
 
 **AO (Agent Orchestrator), the eligibility requirement.** The build ran as an orchestrator session with the work split across worker sessions: matching engine, precedent compiler, close interface, and seed pipeline. The session count and the PR summaries are on screen in the demo video, because the rules page asks for exactly that.
 
