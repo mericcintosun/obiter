@@ -840,3 +840,196 @@ actually run, three clean walks of all seven DEMO.md steps at
 is HANDOFF 3B: ten live compiler runs across all six patterns, checking for rules
 wider than the controller asked for. `adoptModelRule` bounds the tolerance now,
 but nobody has watched a real model try to widen a scope ten times in a row.
+
+---
+
+### Phase 5, 6 September 2026: the trust surface of a public close screen
+
+**Goal.** The app is deployed at a public URL with three anonymous API routes,
+one of which wipes the close ledger and one of which spends money at Anthropic.
+Close the cross-site write, make the compile prompt say that controller text is
+evidence rather than instruction, put source and data-scope lines in the footer,
+and write `SECURITY.md` so a judge can read what this app touches in one screen.
+
+**Status.** All five slices done. Nothing was cut. **Not verified by me: nothing
+in this phase was executed, because this session had file tools only.**
+`npm install`, `npm run build`, `npm test` and the browser are all unrun. The
+greps below were run with the Grep tool and their counts are real; everything
+else is "written", not "proven".
+
+**The contract front and the wallet front, verified vacuously.** This repo has no
+`contracts/` directory, no wallet dependency, no chain and no on-chain fixture,
+so there is no contract to audit and no signing flow to review. The grep that
+proves it, run repo-wide:
+`eth_requestAccounts|personal_sign|eth_sign|wallet_switchEthereumChain|\.connect\(`
+returns **zero hits**. `forge test` and every chain check are not applicable.
+**No Blockaid or wallet-scanner warning can apply to this app, because it never
+asks a browser for an account and never builds a transaction.** The only mutable
+state Obiter has is the close journal.
+
+**Findings ledger.**
+
+| # | Finding | Severity | State | Shortest fix path |
+| --- | --- | --- | --- | --- |
+| 1 | `POST /api/close/journal` accepted `{"op":"reset"}` from any origin, and `lib/store.ts:253` deletes every row in `closures`, `live_exceptions` and `precedents` for `CLOSE_ID`. A tab on another site could wipe the close mid-recording. | High | **Fixed** | `sameOriginOk` in `lib/http.ts`, first statement of the handler |
+| 2 | `POST /api/precedent` was anonymous and reaches a paid model. A cross-site page could spend the operator's Anthropic budget in a loop. | Medium | **Fixed** | Same guard, same position |
+| 3 | Every visitor shares one `OBITER_CLOSE_ID`, so one person's "Reset the close" clears rows another person just wrote. The same-origin guard does not touch this: it is two legitimate visitors, not an attacker. | Medium | **Parked** | A close id minted per browser and carried on the request, which makes the reset harmless by construction. Written into `SECURITY.md` as future work |
+| 4 | `buildPrompt` interpolated controller text straight into the model prompt. The real defense was already downstream, in `precedentJsonSchema` and `adoptModelRule`. | Low | **Fixed** | The delimited evidence block and rule 6 in `lib/agent.ts` |
+| 5 | No rate limit on either POST route. An origin-spoofing non-browser client (curl sends no `Origin`, so it passes by design) can still call the compiler as fast as it likes. | Medium | **Parked** | Not in this phase's scope. A per-IP counter in middleware, or Vercel's own rate limiting, is the cheap version. Until then the real bound is `COMPILE_TIMEOUT_MS` 6000 and the operator's own Anthropic spend cap |
+| 6 | `getCloseState()` swallows a store failure and serves the seed, so a misconfigured `DATABASE_URL` looks exactly like a fresh close. Carried from Phase 2. | Low | **Parked** | One line of visible state on the close screen when the store did not answer |
+
+**Sweep, run by me with the Grep tool. Counts are real, not assumed.**
+
+- Wallet and chain calls, repo-wide: **zero**. See the vacuous-verification note
+  above.
+- `sk-`, `PRIVATE_KEY`, `NEXT_PUBLIC_`, `[0-9a-f]{64}` under `app/`,
+  `components/`, `lib/`: **one hit, and it is a comment.** `lib/config.ts:6`
+  reads "Nothing here is prefixed NEXT_PUBLIC_". No key, no hash, no secret.
+- `process.env` outside `lib/config.ts` and `scripts/*.mjs`: **zero in code.**
+  The other hits are documentation: `CLAUDE.md:55`, three lines in this file,
+  and `prompts/precedent-compiler.md:17`.
+- `http://` under `app/`, `components/`, `lib/`: **one hit, and it is not a
+  request.** `app/icon.svg:1` carries the SVG `xmlns` namespace URI, which is an
+  identifier and is never fetched. No mixed content.
+- `target=` under `app/` and `components/`: **zero hits.** There is no
+  `target="_blank"` anywhere in the app, so the `rel="noopener noreferrer"`
+  requirement has nothing to attach to. The footer links added this phase
+  deliberately carry no `target`, matching `components/site-nav.tsx:47`.
+- `dangerouslySetInnerHTML`, `eval(`, `new Function(`: **zero.**
+- Every `fetch(` in `components/close-queue.tsx`: three, at lines 247, 294 and
+  384, pointing at `/api/close/journal`, `/api/precedent` and
+  `/api/settlements?seq=...&id=...`. All three route files exist in this repo.
+  No third-party endpoint is called from a browser.
+- Log hygiene in the three route handlers: **clean, no fix needed.**
+  `app/api/close/journal/route.ts` logs the rule id and the closure count, the
+  reverted precedent id, the settlement id and sequence, and the word `reset`.
+  `app/api/precedent/route.ts` logs the rule id, the compiler source, the
+  `wouldClose` count and the elapsed milliseconds, with a comment saying the rule
+  body and the model answer stay off the log on purpose.
+  `app/api/settlements/route.ts` logs the exception id, the sequence, the source
+  and the elapsed time. No counterparty name, no amount and no rule body reaches
+  a log line.
+
+**Tripwire greps, run by me over `app/` and `components/`.**
+
+- The 24 banned hex values: **zero hits.** The only repo hits are `IDENTITY.md:21`
+  and the phase reports in this file, all of which name them as rejected.
+- `fade-up`, `float`, `float-y`, `glow-pulse`, `caret-blink`, `pulse-dot`,
+  `--delay`, `--d`, `backdrop-blur`, `bg-*/85`: **zero.**
+- `@keyframes`: exactly two repo-wide, `obiter-wipe` and `obiter-stamp`, both in
+  `app/globals.css:119` and `:130`.
+- `<Image` with a `/brand/` src: exactly one, in `app/layout.tsx`, inside the
+  home link. The header is still `sticky top-0 z-20 border-b border-border
+  bg-ground`, with no translucency.
+- By eye: no browser chrome, no console card, no mono stat strip, no big-number
+  stat tile band, no numbered tab stepper, no pulse-dot badge, no masked wash.
+  This phase added one paragraph of body text to an existing footer and nothing
+  else visual.
+
+**Decisions.**
+
+1. **An absent `Origin` passes.** A browser sets `Origin` on every cross-site
+   POST, which is the exact request this guard exists to refuse. It is the
+   non-browser callers (curl, a server-to-server check, the runner's own smoke
+   test) that send none, and refusing those would break the checks without
+   closing the hole. So absence is allowed and a mismatch is not. This is
+   written into the header comment of `lib/http.ts` rather than left to be
+   rediscovered.
+2. **The failure code is `invalid_input`, not a new one.** `lib/errors.ts` holds
+   a closed union and this phase added no route, no dependency and no vocabulary.
+   A cross-site POST is a request this app does not accept, which `invalid_input`
+   already says; the 403 status carries the rest. Adding a `forbidden` code would
+   have meant every consumer of `ErrorCode` gains a branch for one call site.
+3. **The guard is not on `GET /api/settlements`.** It is read-only, and browsers
+   omit `Origin` on same-origin GETs, so the check would be decoration on a route
+   that cannot write or spend.
+4. **The prompt block is a comment on the real defense, not the defense
+   itself.** `precedentJsonSchema` bounds what the model may emit and
+   `adoptModelRule` rejects a widened scope or an overreaching tolerance, and
+   those run whatever the prompt says. Rule 6 and the delimiters remove the easy
+   case and cost one line; the two tests in `tests/security.test.ts` pin the
+   thing that actually holds, with an injection sentence sitting in
+   `decision.rationale` while they do it.
+5. **`exception.blockedReason` joined the prompt inside the block.** It was not
+   interpolated before. It is the sentence explaining why the engine escalated,
+   it is genuinely useful context for the compiler, and putting it in now means
+   it enters delimited rather than being added unguarded by a later phase.
+6. **The footer got a second paragraph, not a component.** The brief allows one
+   block in the existing `<footer>`. Body font, `text-sm text-muted-foreground`,
+   `underline underline-offset-4` on the two links, no `target`, no icon, no
+   badge, no new token and no new hex.
+7. **`tests/security.test.ts` rides in the first commit.** It imports
+   `sameOriginOk` from `lib/http.ts`, which lands in that same commit, and
+   `adoptModelRule`, which has been in `lib/precedent.ts` since Phase 2. Every
+   commit in `.farm-commits.json` leaves a tree whose imports resolve.
+
+**Failed attempts.** None. No edit needed a second correction. Read that as
+"untested", not as "clean": nothing here was executed.
+
+**Files changed.**
+
+Created: `lib/http.ts`, `tests/security.test.ts`, `SECURITY.md`,
+`.farm-commits.json`.
+
+Edited: `app/api/close/journal/route.ts` (the import and the guard),
+`app/api/precedent/route.ts` (the import and the guard), `lib/agent.ts` (the two
+delimiter constants, the restructured prompt body, rule 6; the chain and every
+other function are untouched), `app/layout.tsx` (one paragraph inside the
+existing footer), `README.md` (one pointer under Tech stack), `HANDOFF.md`.
+
+Untouched on purpose: `IDENTITY.md`, `DEMO.md` (the seven steps and the routes
+table are the contract), `lib/data.ts`, `lib/precedent.ts`, `lib/store.ts`,
+`lib/db/*`, `lib/config.ts`, `lib/errors.ts`, `lib/schemas.ts`, `lib/dodo.ts`,
+`lib/adapters.ts`, `lib/fake-compiler.ts`, `app/api/settlements/route.ts`,
+`components/*`, `app/globals.css`, `app/icon.svg`, `app/opengraph-image.png`,
+`public/*`, `drizzle/*`, `scripts/*`, `.env.example` (this phase added no env
+key), `package.json` (no new dependency).
+
+**Commands run.** None. This session had Write, Edit, Read, Glob and Grep only.
+
+**Acceptance items I could not meet by reading.**
+
+1. `npm install`, `npm run build`, `npm test`. The new suite
+   `tests/security.test.ts` has never been run. It uses only `vitest`, the `@/`
+   alias and the global `Request`, all of which the existing suites and the Node
+   runtime already provide.
+2. The cross-origin check itself. Nobody has posted to
+   `https://obiter-app.vercel.app/api/close/journal` from another page's console
+   and seen a 403, and nobody has walked the seven DEMO.md steps with the guard
+   in place.
+3. **The rollback, if the guard breaks a demo step: delete the two `sameOriginOk`
+   calls** (one in each POST handler, each a five-line `if` at the top) and leave
+   `lib/http.ts` in place. That restores the previous behaviour exactly and
+   touches nothing else.
+
+**Open questions.**
+
+1. **`new URL(request.url).host` behind Vercel's proxy is the one thing that
+   could break a demo step.** The guard compares the `Origin` host to the host
+   in `request.url`. In a Next.js route handler that URL is built from the
+   incoming request, so on Vercel it should carry the public host and match the
+   `Origin` the browser sends. If a platform rewrite ever makes it an internal
+   host instead, every in-app write starts returning 403 and the close screen
+   silently stops persisting. The check is the first item on the human list, and
+   the rollback in the paragraph above is the two-line answer.
+2. Findings 3, 5 and 6 in the ledger above are parked, with their shortest fix
+   paths named there. The shared close id (3) is the one a judge could actually
+   trip over: two people on the deployed URL at once share one ledger.
+3. Nothing from Phase 2, 3 or 4's open questions was closed. `postgresStore`
+   still has not met a real database, a misconfigured `DATABASE_URL` still looks
+   like a fresh close, the Dodo response envelope is still a guess, the autonomy
+   denominator still grows with pulled settlements, and HANDOFF 3B's ten live
+   compiler runs are still unrun.
+4. `console.` is still not zero under `app/`: nine hits, all server-side logs in
+   the three route handlers, all of them ids, counts and timings. Phase 4 left
+   them deliberately and this phase re-read every one and agrees. See the log
+   hygiene line in the sweep.
+
+**Next best step.** The recording, unchanged from Phase 4, with one item added
+in front of it: post to `/api/close/journal` from another page's console on the
+deployed URL, confirm the 403, then walk all seven DEMO.md steps in the app and
+confirm apply, revert, settlement and "Reset the close" all still write. If any
+of them fails, the rollback is the two `sameOriginOk` calls and it costs a
+minute. After that, the highest-value code item left is still HANDOFF 3B: ten
+live compiler runs across all six patterns, now with the delimited prompt in
+place, watching for a rule wider than the controller asked for.

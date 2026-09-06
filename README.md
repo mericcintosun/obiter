@@ -123,6 +123,8 @@ Three bounds, all in the real path, all there because the recording is the deliv
 
 Next.js 15 App Router, TypeScript in strict mode, Tailwind CSS v4, shadcn primitives, Zod for rule validation and at every route edge, Drizzle over Postgres on Neon for the close ledger, Claude for the one compilation step, Dodo Payments test mode for the settlement feed, Vitest for the pinned demo test, deployed on Vercel.
 
+[`SECURITY.md`](SECURITY.md) is the other half of that list: what the app holds, every credential and outbound call it makes, what each endpoint can write or spend, and where to send a report. There is no wallet and no chain in this repo.
+
 ## Quickstart
 
 ```bash
