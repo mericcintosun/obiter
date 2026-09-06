@@ -86,7 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <main>{children}</main>
 
-        <footer className="mt-24 border-t border-border">
+        <footer className="mt-16 border-t border-border">
           <div className="mx-auto max-w-5xl px-5 py-9">
             {/* The four link kinds a judge checks: the demo route, the repo, the
                 security note, and the hackathon page. Ruled row, no icons, no
@@ -118,31 +118,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>
             </nav>
 
-            <div className="mt-6 text-sm text-muted-foreground">
-              <p>
-              Obiter. Built for the Syndicate by Maximor hackathon, Track 2, Autonomous Office of
-              the CFO. Seed data is a fictional August 2026 close for a company called Halden
-              Analytics.
-            </p>
-            <p className="mt-3">
-              Source at{" "}
+            {/* One sentence, not two standing paragraphs. It still carries the
+                three facts phase 5 required of this block: where the source is,
+                where the security note is, and that the close is fictional with
+                nothing of a customer's stored behind it. */}
+            <p className="obiter-colophon">
+              The source is at{" "}
               <a
                 href="https://github.com/mericcintosun/obiter"
                 className="underline underline-offset-4"
               >
                 github.com/mericcintosun/obiter
               </a>
-              , and what this app touches is written out in{" "}
+              , what this app touches is written out in{" "}
               <a
                 href="https://github.com/mericcintosun/obiter/blob/main/SECURITY.md"
                 className="underline underline-offset-4"
               >
                 SECURITY.md
               </a>
-              . The close on screen is fictional, and Obiter stores no customer records and no
-              payment data of its own.
-              </p>
-            </div>
+              , and the August 2026 close on screen is a fictional one for a company called Halden
+              Analytics: Obiter stores no customer records and no payment data of its own.
+            </p>
           </div>
         </footer>
       </body>

@@ -175,6 +175,51 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
+/* The reading measure. The article shell is max-w-5xl so the masthead, the body
+   and the colophon share one left rule at 1440; the prose inside is held to 68
+   characters, which is where a line stops being readable. Nothing here centers:
+   the measure hangs off the shell's left edge. */
+.obiter-measure {
+  max-width: 68ch;
+}
+
+/* The plate: a figure that breaks the measure to the shell's full width, which
+   is the one amplification an L3 page gets. Its caption sits under a hairline so
+   the picture is closed off the way a ruled entry is. */
+.obiter-plate {
+  display: block;
+  width: 100%;
+}
+
+.obiter-plate-caption {
+  border-top: 1px solid var(--line);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+/* The one line disclosure under the build ledger. It holds the two entries that
+   are not load bearing for a judge, so it has to read as a ruled row rather than
+   as a browser default triangle sitting on nothing. */
+.obiter-build-more {
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 0;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+/* The colophon. One sentence under the footer's link row, not a standing block
+   of body copy. */
+.obiter-colophon {
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
 /* MOTION: M4 wipe. clip-path inset reveal, 600ms, cubic-bezier(0.65, 0, 0.35, 1).
    Stagger rides nth-child, never an inline delay custom property. */
 @keyframes obiter-wipe {
