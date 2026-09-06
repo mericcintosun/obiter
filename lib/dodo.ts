@@ -13,6 +13,7 @@ import type { ReconException } from "@/lib/data";
 import {
   DODO_API_BASE,
   DODO_API_KEY,
+  LOG_PREFIX,
   UPSTREAM_RETRIES,
   UPSTREAM_TIMEOUT_MS,
 } from "@/lib/config";
@@ -124,26 +125,69 @@ async function fetchOnce(url: string, init: RequestInit): Promise<Response> {
 }
 
 /**
- * One settlement, newest first. `sequence` only matters for the fixture path:
- * it walks the list so repeated calls during a demo return different money.
+ * Whether a live payment can play the part DEMO.md step 6 asks of it.
+ *
+ * Two conditions, both about the demo rather than about Dodo. A payment whose
+ * metadata carried no invoice number is mapped to an INV-UNMAPPED placeholder,
+ * and a placeholder cannot be reconciled against anything. A payment that is
+ * not short of its invoice produces no delta, so no precedent closes it and
+ * step 6 shows a row sitting open instead of closing itself.
+ */
+export function usableForDemo(settlement: IncomingSettlement): boolean {
+  if (settlement.invoiceNumber.startsWith("INV-UNMAPPED")) return false;
+  // Rounded to cents the same way settlementToException rounds it, so the two
+  // functions cannot disagree about whether a payment is short.
+  const delta = Math.round((settlement.invoiceAmount - settlement.receivedAmount) * 100) / 100;
+  return delta > 0;
+}
+
+/**
+ * One settlement out of a page of them, walked by `sequence`.
+ *
+ * This is what makes a second and third pull return different money instead of
+ * the same newest payment three times. Returns null when the page held nothing
+ * that could be reconciled, which is the caller's signal to use the fixture.
+ */
+export function pickSettlement(
+  mapped: IncomingSettlement[],
+  sequence: number
+): IncomingSettlement | null {
+  const filtered = mapped.filter(usableForDemo);
+  if (filtered.length === 0) return null;
+  return filtered[sequence % filtered.length];
+}
+
+/**
+ * One settlement. `sequence` walks both paths: the live page through
+ * `pickSettlement`, and the fixture list below, so repeated calls during a demo
+ * return different money either way.
  */
 export async function fetchLatestSettlement(sequence = 0): Promise<IncomingSettlement> {
   if (DODO_API_KEY) {
+    let picked: IncomingSettlement | null = null;
     try {
-      const response = await fetchOnce(`${DODO_API_BASE}/payments?page_size=1&status=succeeded`, {
+      // A page, not a single row. One newest payment is one chance of being a
+      // short payment with an invoice number on it; ten is enough that a test
+      // account with ordinary traffic still has something step 6 can use.
+      const response = await fetchOnce(`${DODO_API_BASE}/payments?page_size=10&status=succeeded`, {
         headers: { Authorization: `Bearer ${DODO_API_KEY}`, "content-type": "application/json" },
         cache: "no-store",
       });
       if (response.ok) {
         const body = (await response.json()) as { items?: DodoPayment[]; data?: DodoPayment[] };
         const payments = body.items ?? body.data ?? [];
-        const mapped = mapDodoPayments(payments);
-        if (mapped.length > 0) return mapped[0];
+        picked = pickSettlement(mapDodoPayments(payments), sequence);
       }
     } catch {
       // Fall through to the fixture. A settlement feed that is down must never
       // take the close screen with it.
+      picked = null;
     }
+
+    if (picked) return picked;
+    console.warn(
+      `${LOG_PREFIX} the live settlement feed had nothing that could be reconciled, so the fixture answered seq=${sequence}`
+    );
   }
 
   const fixture = fixtureSettlements[sequence % fixtureSettlements.length];
