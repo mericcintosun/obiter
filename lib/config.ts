@@ -47,11 +47,23 @@ export const UPSTREAM_RETRIES = 1;
 /** The local `claude` CLI is slower than the API and gets its own budget. */
 export const CLI_TIMEOUT_MS = 45_000;
 
+/** The compile step is on camera and the demo contract allows it five seconds of feel, so the model gets six and then loses its turn. */
+export const COMPILE_TIMEOUT_MS = 6_000;
+
+/** A retry would double the worst case, and the next compiler in the chain is the retry. */
+export const COMPILE_RETRIES = 0;
+
+/** Set by the Vercel platform, never by hand. The `claude` binary is not installed there. */
+export const RUNNING_ON_VERCEL = process.env.VERCEL === "1";
+
 /** A database that has not answered in this long is treated as down. */
 export const DB_TIMEOUT_MS = 5_000;
 
 /** How many compile results the in-process cache holds before it evicts. */
 export const COMPILE_CACHE_MAX = 50;
+
+/** How many journal idempotency keys one server instance remembers before it evicts. */
+export const JOURNAL_KEY_MAX = 200;
 
 /** Every core path log line starts with this, so one grep finds the whole run. */
 export const LOG_PREFIX = "[core]";
