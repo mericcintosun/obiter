@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" width="900" height="260" role="img" aria-label="An audit trail of five sealed entries with a single return path that puts every one of them back">
+  <rect width="900" height="260" fill="#f3ecdf"/>
+
+  <!-- the trail itself, one hairline down the margin -->
+  <line x1="150" y1="26" x2="150" y2="234" stroke="#e9e0cd" stroke-width="1"/>
+
+  <!-- five entries, each stamped with the same seal -->
+  <g stroke="#e9e0cd" stroke-width="1">
+    <line x1="172" y1="52" x2="700" y2="52"/>
+    <line x1="172" y1="92" x2="700" y2="92"/>
+    <line x1="172" y1="132" x2="700" y2="132"/>
+    <line x1="172" y1="172" x2="700" y2="172"/>
+    <line x1="172" y1="212" x2="700" y2="212"/>
+  </g>
+  <g fill="#2d4fd1">
+    <circle cx="150" cy="38" r="6"/>
+    <circle cx="150" cy="78" r="6"/>
+    <circle cx="150" cy="118" r="6"/>
+    <circle cx="150" cy="158" r="6"/>
+    <circle cx="150" cy="198" r="6"/>
+  </g>
+  <g fill="#221d16" opacity="0.68">
+    <rect x="180" y="33" width="196" height="9"/>
+    <rect x="180" y="73" width="164" height="9"/>
+    <rect x="180" y="113" width="228" height="9"/>
+    <rect x="180" y="153" width="150" height="9"/>
+    <rect x="180" y="193" width="206" height="9"/>
+  </g>
+  <g fill="#221d16" opacity="0.3">
+    <rect x="424" y="34" width="92" height="7"/>
+    <rect x="424" y="74" width="74" height="7"/>
+    <rect x="424" y="114" width="104" height="7"/>
+    <rect x="424" y="154" width="86" height="7"/>
+    <rect x="424" y="194" width="96" height="7"/>
+  </g>
+  <g fill="#2e5c3a">
+    <rect x="600" y="34" width="62" height="7"/>
+    <rect x="600" y="74" width="78" height="7"/>
+    <rect x="600" y="114" width="54" height="7"/>
+    <rect x="600" y="154" width="70" height="7"/>
+    <rect x="600" y="194" width="58" height="7"/>
+  </g>
+
+  <!-- one revert: a single pass back to the top that returns all five -->
+  <path d="M 704 198 C 830 198 830 38 716 38" fill="none" stroke="#221d16" stroke-width="1.6"/>
+  <polygon points="704,38 720,30 720,46" fill="#221d16"/>
+  <rect x="746" y="108" width="86" height="8" fill="#221d16" opacity="0.34"/>
+  <rect x="746" y="126" width="58" height="8" fill="#221d16" opacity="0.2"/>
+</svg>

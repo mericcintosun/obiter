@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-label="The module graph: the seed and the settlement feed enter one adapter seam, which reaches the compiler chain and the close journal, and both answer the two pages">
+  <rect width="900" height="300" fill="#f3ecdf"/>
+
+  <!-- connectors first, so the boxes sit on top of them -->
+  <g fill="none" stroke="#221d16" stroke-width="1" opacity="0.24">
+    <path d="M 200 74 H 228 V 140 H 256"/>
+    <path d="M 200 226 H 228 V 160 H 256"/>
+    <path d="M 444 130 H 472 V 62 H 500"/>
+    <path d="M 444 170 H 472 V 238 H 500"/>
+    <path d="M 676 62 H 704 V 130 H 732"/>
+    <path d="M 676 238 H 704 V 170 H 732"/>
+  </g>
+
+  <!-- the seed, which has no imports and is where every number on screen starts -->
+  <rect x="24" y="44" width="176" height="60" fill="#faf6ee" stroke="#e9e0cd" stroke-width="1"/>
+  <rect x="44" y="62" width="104" height="9" fill="#221d16" opacity="0.72"/>
+  <rect x="44" y="80" width="72" height="7" fill="#221d16" opacity="0.3"/>
+
+  <!-- the settlement feed -->
+  <rect x="24" y="196" width="176" height="60" fill="#faf6ee" stroke="#e9e0cd" stroke-width="1"/>
+  <rect x="44" y="214" width="92" height="9" fill="#221d16" opacity="0.72"/>
+  <rect x="44" y="232" width="66" height="7" fill="#221d16" opacity="0.3"/>
+
+  <!-- the seam every page and route goes through -->
+  <rect x="256" y="110" width="188" height="80" fill="#faf6ee" stroke="#e9e0cd" stroke-width="1"/>
+  <rect x="276" y="130" width="120" height="9" fill="#221d16" opacity="0.72"/>
+  <rect x="276" y="148" width="88" height="7" fill="#221d16" opacity="0.3"/>
+  <rect x="276" y="164" width="104" height="7" fill="#221d16" opacity="0.3"/>
+
+  <!-- the compiler chain: the one place a model runs, marked with the seal -->
+  <rect x="500" y="30" width="176" height="64" fill="#faf6ee" stroke="#e9e0cd" stroke-width="1"/>
+  <rect x="500" y="30" width="4" height="64" fill="#2d4fd1"/>
+  <rect x="520" y="48" width="112" height="9" fill="#221d16" opacity="0.72"/>
+  <rect x="520" y="66" width="78" height="7" fill="#221d16" opacity="0.3"/>
+
+  <!-- the close journal, marked forest for the state it keeps -->
+  <rect x="500" y="206" width="176" height="64" fill="#faf6ee" stroke="#e9e0cd" stroke-width="1"/>
+  <rect x="500" y="206" width="4" height="64" fill="#2e5c3a"/>
+  <rect x="520" y="224" width="96" height="9" fill="#221d16" opacity="0.72"/>
+  <rect x="520" y="242" width="70" height="7" fill="#221d16" opacity="0.3"/>
+
+  <!-- the two pages and the three routes they call -->
+  <rect x="732" y="104" width="144" height="92" fill="#faf6ee" stroke="#e9e0cd" stroke-width="1"/>
+  <g stroke="#e9e0cd" stroke-width="1">
+    <line x1="748" y1="140" x2="860" y2="140"/>
+    <line x1="748" y1="168" x2="860" y2="168"/>
+  </g>
+  <g fill="#221d16" opacity="0.6">
+    <rect x="748" y="120" width="84" height="9"/>
+    <rect x="748" y="148" width="66" height="9"/>
+    <rect x="748" y="176" width="94" height="9"/>
+  </g>
+</svg>

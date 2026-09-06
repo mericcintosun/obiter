@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" width="900" height="260" role="img" aria-label="One resolved exception compiles into a sealed rule, and the rule fans out to seven ruled entries">
+  <rect width="900" height="260" fill="#f3ecdf"/>
+
+  <!-- left: the one exception on the desk, boxed off from the queue -->
+  <rect x="24" y="54" width="210" height="100" fill="#faf6ee" stroke="#e9e0cd" stroke-width="1"/>
+  <rect x="44" y="76" width="140" height="8" fill="#221d16" opacity="0.72"/>
+  <rect x="44" y="96" width="108" height="8" fill="#221d16" opacity="0.34"/>
+  <rect x="44" y="122" width="64" height="8" fill="#b06a12"/>
+
+  <!-- the compile step -->
+  <line x1="234" y1="104" x2="296" y2="104" stroke="#221d16" stroke-width="1" opacity="0.28"/>
+  <polygon points="304,104 290,97 290,111" fill="#221d16" opacity="0.55"/>
+
+  <!-- middle: the typed rule, with the seal stamped on it -->
+  <rect x="310" y="32" width="250" height="190" fill="#faf6ee" stroke="#e9e0cd" stroke-width="1"/>
+  <g fill="#2d4fd1">
+    <circle cx="352" cy="68" r="15"/>
+    <circle cx="367" cy="68" r="4.2"/>
+    <circle cx="364.2" cy="59.2" r="4.2"/>
+    <circle cx="356.7" cy="53.8" r="4.2"/>
+    <circle cx="347.3" cy="53.8" r="4.2"/>
+    <circle cx="339.8" cy="59.2" r="4.2"/>
+    <circle cx="337" cy="68" r="4.2"/>
+    <circle cx="339.8" cy="76.8" r="4.2"/>
+    <circle cx="347.3" cy="82.2" r="4.2"/>
+    <circle cx="356.7" cy="82.2" r="4.2"/>
+    <circle cx="364.2" cy="76.8" r="4.2"/>
+  </g>
+  <circle cx="352" cy="68" r="10.5" fill="none" stroke="#faf6ee" stroke-width="2"/>
+  <circle cx="352" cy="68" r="4.4" fill="#faf6ee"/>
+  <rect x="384" y="63" width="140" height="9" fill="#221d16" opacity="0.72"/>
+
+  <!-- the three conditions, set as ruled entries -->
+  <g stroke="#e9e0cd" stroke-width="1">
+    <line x1="330" y1="104" x2="540" y2="104"/>
+    <line x1="330" y1="140" x2="540" y2="140"/>
+    <line x1="330" y1="176" x2="540" y2="176"/>
+    <line x1="330" y1="212" x2="540" y2="212"/>
+  </g>
+  <g fill="#221d16">
+    <rect x="330" y="113" width="86" height="7" opacity="0.34"/>
+    <rect x="330" y="149" width="104" height="7" opacity="0.34"/>
+    <rect x="330" y="185" width="72" height="7" opacity="0.34"/>
+    <rect x="470" y="113" width="40" height="7" opacity="0.72"/>
+    <rect x="470" y="149" width="52" height="7" opacity="0.72"/>
+    <rect x="470" y="185" width="34" height="7" opacity="0.72"/>
+  </g>
+
+  <!-- the fan: one rule reaching seven open entries -->
+  <g stroke="#221d16" stroke-width="1" opacity="0.22" fill="none">
+    <path d="M 566 118 L 604 32"/>
+    <path d="M 566 118 L 604 64"/>
+    <path d="M 566 118 L 604 96"/>
+    <path d="M 566 118 L 604 128"/>
+    <path d="M 566 118 L 604 160"/>
+    <path d="M 566 118 L 604 192"/>
+    <path d="M 566 118 L 604 224"/>
+  </g>
+
+  <!-- right: the seven entries the rule closes, each sealed in the margin -->
+  <g stroke="#e9e0cd" stroke-width="1">
+    <line x1="610" y1="44" x2="876" y2="44"/>
+    <line x1="610" y1="76" x2="876" y2="76"/>
+    <line x1="610" y1="108" x2="876" y2="108"/>
+    <line x1="610" y1="140" x2="876" y2="140"/>
+    <line x1="610" y1="172" x2="876" y2="172"/>
+    <line x1="610" y1="204" x2="876" y2="204"/>
+    <line x1="610" y1="236" x2="876" y2="236"/>
+  </g>
+  <g fill="#2d4fd1">
+    <rect x="610" y="25" width="4" height="12"/>
+    <rect x="610" y="57" width="4" height="12"/>
+    <rect x="610" y="89" width="4" height="12"/>
+    <rect x="610" y="121" width="4" height="12"/>
+    <rect x="610" y="153" width="4" height="12"/>
+    <rect x="610" y="185" width="4" height="12"/>
+    <rect x="610" y="217" width="4" height="12"/>
+  </g>
+  <g fill="#221d16" opacity="0.62">
+    <rect x="626" y="27" width="118" height="8"/>
+    <rect x="626" y="59" width="146" height="8"/>
+    <rect x="626" y="91" width="102" height="8"/>
+    <rect x="626" y="123" width="134" height="8"/>
+    <rect x="626" y="155" width="94" height="8"/>
+    <rect x="626" y="187" width="126" height="8"/>
+    <rect x="626" y="219" width="110" height="8"/>
+  </g>
+  <g fill="#2e5c3a">
+    <rect x="800" y="28" width="60" height="7"/>
+    <rect x="800" y="60" width="74" height="7"/>
+    <rect x="800" y="92" width="52" height="7"/>
+    <rect x="800" y="124" width="68" height="7"/>
+    <rect x="800" y="156" width="46" height="7"/>
+    <rect x="800" y="188" width="64" height="7"/>
+    <rect x="800" y="220" width="56" height="7"/>
+  </g>
+</svg>
